@@ -1,192 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>STI Queues</title>
-
-  <!--
-    REMOVE THE STYLES SECTION AND ADD A LINK HREF INSTEAD
-    LAHAT NG HTML, SO FIGURE OUT A WAY TO NAME THEM PROPERLY
-  -->
-  <style>
-    body {
-      font-family: sans-serif;
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-
-    }
-
-    .header {
-      background-color: #a2b9c9;
-      padding: 10px;
-      text-align: left;
-      border-bottom: 1px solid #ccc;
-      display: flex;
-      align-items: center;
-    }
-
-    .header img {
-      height: 40px;
-      vertical-align: middle;
-      margin-right: 10px;
-    }
-
-    .header h1 {
-      display: inline-block;
-      color: #ffffff;
-      margin: 0;
-      font-size: 1.3em;
-    }
-
-    .main-content {
-      display: flex;
-      flex-grow: 1;
-    }
-
-    .sidebar {
-      width: 200px;
-      background-color: #f0f0f0;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-    }
-
-    .sidebar a {
-      text-decoration: none;
-      color: #333;
-      padding: 10px;
-      margin-bottom: 5px;
-      border-radius: 5px;
-    }
-
-    .sidebar a:hover,
-    .sidebar a.active {
-      background-color: #ddd;
-    }
-
-    .sidebar .back-button {
-      position: absolute;
-      bottom: 10px;
-      left: 10px;
-      background-color: #f0f0f0;
-      border: none;
-      padding: 10px;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-
-    .sidebar .back-button:hover {
-      background-color: #ddd;
-    }
-
-    .container {
-      width: 900px;
-      margin: 50px auto;
-      padding: 20px;
-      border: 1px solid #ccc;
-      border-radius: 10px;
-      box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
-    }
-
-    .tabs {
-      display: flex;
-      justify-content: space-around;
-      font-weight: bold;
-    }
-
-    .tabs span {
-      cursor: pointer;
-      padding-bottom: 5px;
-    }
-
-    .tabs .active {
-      text-decoration: underline;
-    }
-
-    .content {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 20px;
-    }
-
-    .queue-box {
-      background: #ddd;
-      padding: 40px;
-      font-size: 32px;
-      border-radius: 5px;
-      flex: 1;
-      text-align: center;
-      margin-right: 40px;
-    }
-
-    .controls {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 20px;
-    }
-
-    button {
-      width: 120px;
-      padding: 10px;
-      font-size: 14px;
-      cursor: pointer;
-      border: none;
-      border-radius: 5px;
-      background: #ccc;
-    }
-
-    button:hover {
-      background: #bbb;
-    }
-
-    input {
-      width: 50px;
-      text-align: center;
-    }
-
-    label {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .lane-title {
-      font-size: 20px;
-      font-weight: bold;
-    }
-
-    .print-section {
-    text-align: center;
-    margin-top: 30px;
-    }
-
-    .print-section button {
-    padding: 10px 20px;
-    font-size: 16px;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    }
-
-    .print-section button:hover {
-    background-color: #45a049;
-    }
-  </style>
+  <link rel="stylesheet" href="css/styles.css" />
 </head>
-
 <body>
-
   <div class="header">
-    <img src="sti-logo.png" alt="STI Logo">
+    <img src="sti-logo.png" alt="STI Logo" />
     <h1>STI Queue Management</h1>
   </div>
 
@@ -207,86 +29,60 @@
         <span onclick="window.location.href='registrar.html'">Registrar</span>
       </div>
 
-      <!-- This is Counter 1 -->
+      <!-- Counter 1 -->
       <div class="content">
         <div class="queue-box">
-          <div class="lane-title">Counter 1</div><br>
+          <div class="lane-title">Counter 1</div><br />
           Queue Number: <span id="queueNumber1">67</span>
         </div>
         <div class="controls">
           <button onclick="callNext('queueNumber1')">Call Next ▶</button>
           <button onclick="togglePause(this)">Pause/Resume ⏸</button>
-          <label>Cut-off Number: <input type="number" value="00"></label>
-          <label><input type="checkbox" checked> Prioritize PWD</label>
+          <label>Cut-off Number: <input type="number" value="00" /></label>
+          <label><input type="checkbox" checked /> Prioritize PWD</label>
         </div>
       </div>
 
-      <hr style="border-top: 2px solid #ccc; margin: 30px 0;">
+      <hr />
 
-      <!-- This is Counter 2 -->
+      <!-- Counter 2 -->
       <div class="content">
         <div class="queue-box">
-          <div class="lane-title">Counter 2</div><br>
+          <div class="lane-title">Counter 2</div><br />
           Queue Number: <span id="queueNumber2">80</span>
         </div>
         <div class="controls">
           <button onclick="callNext('queueNumber2')">Call Next ▶</button>
           <button onclick="togglePause(this)">Pause/Resume ⏸</button>
-          <label>Cut-off Number: <input type="number" value="00"></label>
-          <label><input type="checkbox" checked> Prioritize PWD</label>
+          <label>Cut-off Number: <input type="number" value="00" /></label>
+          <label><input type="checkbox" checked /> Prioritize PWD</label>
         </div>
       </div>
 
-      <hr style="border-top: 2px solid #ccc; margin: 30px 0;">
+      <hr />
 
-      <!-- This is Counter 3 -->
+      <!-- Counter 3 -->
       <div class="content">
         <div class="queue-box">
-          <div class="lane-title">Counter 3</div><br>
+          <div class="lane-title">Counter 3</div><br />
           Queue Number: <span id="queueNumber3">55</span>
         </div>
         <div class="controls">
           <button onclick="callNext('queueNumber3')">Call Next ▶</button>
           <button onclick="togglePause(this)">Pause/Resume ⏸</button>
-          <label>Cut-off Number: <input type="number" value="00"></label>
-          <label><input type="checkbox" checked> Prioritize PWD</label>
+          <label>Cut-off Number: <input type="number" value="00" /></label>
+          <label><input type="checkbox" checked /> Prioritize PWD</label>
         </div>
       </div>
-      <hr style="border-top: 2px solid #ccc; margin: 30px 0;">
-        <div class="print-section">
-          <h3>Need to print a form?</h3>
-          <button onclick="printForm()">🖨️ Print Form</button>
-        </div>
 
+      <hr />
+      <div class="print-section">
+        <h3>Need to print a form?</h3>
+        <button onclick="printForm()">🖨️ Print Form</button>
+      </div>
     </div>
   </div>
 
-  <script>
-    function callNext(queueId) {
-      let queueElement = document.getElementById(queueId);
-      let queueNumber = parseInt(queueElement.innerText);
-      if (queueNumber > 0) {
-        queueElement.innerText = queueNumber - 1;
-      }
-    }
-
-    function togglePause(button) {
-      if (button.innerText.includes('Pause')) {
-        button.innerText = 'Resume ▶';
-      } else {
-        button.innerText = 'Pause ⏸';
-      }
-    }
-
-    function printForm() {
-      let printWindow = window.open('', '', 'height=500,width=800');
-      printWindow.document.write('<html><head><title>Form</title></head><body>');
-      printWindow.document.write('<h1>STI Queue Form</h1>');
-      printWindow.document.write('<p>This is a sample form for queue printing.</p>');
-      printWindow.document.write('</body></html>');
-    }
-  </script>
-
+  <script src="script.js"></script>
 </body>
-
 </html>
