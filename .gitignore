@@ -6,6 +6,7 @@ build/
 !**/src/test/**/build/
 
 ### Firebase Configs ###
+sti-queueing-app-firebase-adminsdk-fbsvc-3f59f0f6e2.json
 /firebase-config*.json
 /firebase-service-account*.json
 /serviceAccountKey*.json
