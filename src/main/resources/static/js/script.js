@@ -1,8 +1,24 @@
 function callNext(queueId) {
   let queueElement = document.getElementById(queueId);
   let queueNumber = parseInt(queueElement.innerText);
+  incrementQueue();
   if (queueNumber > 0) {
     queueElement.innerText = queueNumber - 1;
+  }
+}
+
+async function incrementQueue() {
+  try {
+    const activeSpan = document.querySelector('.tabs span.active');
+    if (!activeSpan) return;
+
+    const activeTab = activeSpan.textContent.trim();
+    
+    const response = await fetch(`/api/?tab=${encodeURIComponent(activeTab)}`);
+    const data = await response.json();
+    console.log(data);
+  } catch (error) {
+    console.error('Error:', error);
   }
 }
 

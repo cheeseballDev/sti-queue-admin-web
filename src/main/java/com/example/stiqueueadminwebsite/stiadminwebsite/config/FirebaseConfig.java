@@ -20,7 +20,7 @@ public class FirebaseConfig {
     @Bean
     public static Firestore getFirestore() throws IOException {
         FileInputStream serviceAccount =
-        new FileInputStream("C:\\Users\\Administrator\\Documents\\VSCode\\html&css&jscript\\sti-queue-admin-web\\sti-queueing-app-firebase-adminsdk-fbsvc-3f59f0f6e2.json");
+        new FileInputStream("C:\\Users\\Matthew\\OneDrive - STI College Ortigas-Cainta\\Documents\\VSCode\\WebDev\\stiadminwebsite\\sti-queueing-app-firebase-adminsdk-fbsvc-d3d3f33f48.json");
 
         FirebaseOptions options = FirebaseOptions.builder()
         .setCredentials(GoogleCredentials.fromStream(serviceAccount))
