@@ -14,7 +14,7 @@ async function incrementQueue() {
 
     const activeTab = activeSpan.textContent.trim();
     
-    const response = await fetch(`/api/?tab=${encodeURIComponent(activeTab)}`);
+    const response = await fetch(`/api/?tab=${encodeURIComponent(activeTab)}/`);
     const data = await response.json();
     console.log(data);
   } catch (error) {

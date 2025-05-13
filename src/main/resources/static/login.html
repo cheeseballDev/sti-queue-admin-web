@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login Page</title>
-    
     <style>
         body {
             font-family: sans-serif;
@@ -13,7 +12,9 @@
             align-items: center;
             height: 100vh;
             margin: 0;
-            background-color: #f0f0f0;
+            background: url('https://sdmntprwestus.oaiusercontent.com/files/00000000-ca3c-6230-8c8c-53be1e48b888/raw?se=2025-05-10T16%3A44%3A55Z&sp=r&sv=2024-08-04&sr=b&scid=00000000-0000-0000-0000-000000000000&skoid=ea0c7534-f237-4ccd-b7ea-766c4ed977ad&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-05-09T22%3A14%3A30Z&ske=2025-05-10T22%3A14%3A30Z&sks=b&skv=2024-08-04&sig=z1ITM9l0o2Y7o/12evWWl%2BlBKYEDhlXY9XqZ2z4tcIs%3D') no-repeat center center;
+            background-color: #abcfe6;
+            background-size: 85%;
         }
 
         .login-container {
@@ -70,17 +71,48 @@
             margin-bottom: 30px;
         }
 
-        .right-section input[type="email"],
-        .right-section input[type="password"] {
-            width: calc(100% - 1px); 
-            padding: 10px;
-            margin-bottom: 20px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box; 
+        form {
+            display: flex;
+            flex-direction: column;
         }
 
-        .right-section button {
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            transition: border 0.2s ease;
+        }
+
+        .input-error {
+            border: 2px solid #ff4d4f !important;
+            animation: shake 0.3s ease-in-out;
+            box-shadow: 0 0 8px rgba(255, 77, 79, 0.5);
+        }
+
+        .error-message {
+            color: #ff4d4f;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .error-message.active {
+            display: block;
+        }
+
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+
+        button {
             background-color: #007bff;
             color: white;
             padding: 10px 20px;
@@ -90,7 +122,7 @@
             margin-bottom: 10px;
         }
 
-        .right-section button.microsoft {
+        button.microsoft {
             background-color: #f0f0f0;
             color: black;
         }
@@ -101,36 +133,26 @@
             color: #007bff;
             text-decoration: none;
         }
-
-        .header {
-            background-color: #f0f0f0;
-            padding: 10px 20px;
-            display: flex;
-            align-items: center;
-            border-bottom: 2px solid #ccc;
-        }
-
-        .header img {
-            height: 40px;
-            margin-right: 20px;
-        }
     </style>
 </head>
 <body>
     <div class="login-container">
         <div class="left-section">
             <div class="slideshow-container">
-                <img class="slide" src="https://doc-assets-us-west-1.studocu.com/2ad632f8428401f10387501afe255a4c/html/bg1.png?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6XC9cL2RvYy1hc3NldHMtdXMtd2VzdC0xLnN0dWRvY3UuY29tXC8yYWQ2MzJmODQyODQwMWYxMDM4NzUwMWFmZTI1NWE0Y1wvaHRtbFwvKiIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc0MDc2MjUxNX19fV19&Signature=f6KSVwHpxAv4Z8bLBzOsdgPJAMBkUPXKTa1-mRGvVxVNJhDIK1-UMvI7sCqq1QQT6I0dxCqtKub-dKl9An5iMpnG5AVxohBWJJuG-jNl~6wAb0nezDE-u2TKNZrXEdLFMfomDjQlBIO7WWNUQ4pUW5B2ElvtnAYDwwQ0dNu6Gwv~iuEn6tA28AXjIRJmkTgV2HL00eNRPwiCIuKvXTAmZNCPI7CzfHAHvUTHxRI-aY0SM4rIR9PMlGNWs2jAgfMU915h8QiJkOHto4LQEv872-C2ouTJWcfcRZeQeklu0ETvefxC0zfOi8yZ39pHX4bNE2eWRPzie8IaQ9YFOsmcWw__&Key-Pair-Id=APKAJ535ZH3ZAIIOADHQ" alt="Slide 1">
-                <img class="slide" src="https://website-assets.studocu.com/img/document_thumbnails/1057895df3d680b3acd35ff7ca90409c/thumb_1200_1553.png" alt="Slide 2">
-                <img class="slide" src="https://doc-assets-us-west-1.studocu.com/7b61b8cb65c5a5df1fd3a02f6f8cc403/html/bg1.png?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6XC9cL2RvYy1hc3NldHMtdXMtd2VzdC0xLnN0dWRvY3UuY29tXC83YjYxYjhjYjY1YzVhNWRmMWZkM2EwMmY2ZjhjYzQwM1wvaHRtbFwvKi5wbmciLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE3NDEwMTU3NTh9fX1dfQ__&Signature=da-bXLpJ6oDVvT3en9ubMAH8LHMXL8Wv7Ooe-I6H7Ibe2h5bmXCDGiA9CMwM9K1ktRywQAer6fLe62l1IIPzM9kjep8hUOgErknLmMfvunfQsdZvM~~mUr1yuU21nC7VtMMAPNBdL1iT1uBZXKlcFpD0APKIz5pZ3zuJmnysxOxZgX7nVfFg0iCAfFHlTMHGApLx5tjlYyhQZefuNl-2DkVksbF4s2ZxZpITZ-jgP3aNoqpTkyGnXlj9g~69256h2ZFTeIEFDevrHp0MC2xs8EvsBU12Utv7agfwLZ3li5oqLrv-ATBKfz~~5zm-ar-ZDU2ML-8q~dffUPdn23TpOg__&Key-Pair-Id=APKAJ535ZH3ZAIIOADHQ" alt="Slide 3">
+                <img class="slide" src="https://imgv2-2-f.scribdassets.com/img/document/688476729/original/03f4304d79/1702357886?v=1" alt="Slide 1">
+                <img class="slide" src="https://website-assets.studocu.com/img/document_thumbnails/f6ea1e44f55d8a8b2db956d769047cb2/thumb_1200_1553.png" alt="Slide 2">
+                <img class="slide" src="https://imgv2-1-f.scribdassets.com/img/document/644576771/original/22ded37d41/1?v=1" alt="Slide 3">
             </div>
         </div>
         <div class="right-section">
             <h2>Enter your details below</h2>
-            <input type="email" placeholder="Enter your email address">
-            <input type="password" placeholder="Password">
-            <a href="https://support.microsoft.com/en-us/account-billing/reset-a-forgotten-microsoft-account-password-eff4f067-5042-c1a3-fe72-b04d60556c37">Forgot Password?</a>
-            <button onclick="window.location.href='loading.html'">Login</button>
+            <form id="login-form">
+                <input type="email" id="email" placeholder="Enter your email address">
+                <input type="password" id="password" placeholder="Password">
+                <div id="error-message" class="error-message">Please fill in all fields.</div>
+                <a href="https://support.microsoft.com/en-us/account-billing/reset-a-forgotten-microsoft-account-password-eff4f067-5042-c1a3-fe72-b04d60556c37">Forgot Password?</a>
+                <button type="submit">Login</button>
+            </form>
             <p style="text-align: center; margin: 10px 0; display: flex; align-items: center; justify-content: center;">
                 <svg width="40" height="1" style="margin-right: 10px;">
                   <line x1="0" y1="0.5" x2="40" y2="0.5" stroke="#ccc" stroke-width="1" />
@@ -139,32 +161,54 @@
                 <svg width="40" height="1" style="margin-left: 10px;">
                   <line x1="0" y1="0.5" x2="40" y2="0.5" stroke="#ccc" stroke-width="1" />
                 </svg>
-              </p>
+            </p>
             <button class="microsoft">Log in with Microsoft Account</button>
         </div>
     </div>
-</body>
+
     <script> 
-        // JAVASCRIPT SECTION
-        document.addEventListener('DOMContentLoaded', function() {
-            const slides = document.querySelectorAll('.slide');
-            let currentSlide = 0;
-
-            function showSlide(n) {
-                slides.forEach(slide => slide.classList.remove('active'));
-                slides[n].classList.add('active');
-            }
-
-            function nextSlide() {
-                currentSlide = (currentSlide + 1) % slides.length;
-                showSlide(currentSlide);
-            }
-
-            
+    // JAVASCRIPT SECTION
+    document.addEventListener('DOMContentLoaded', function() {
+        // Slideshow
+        const slides = document.querySelectorAll('.slide');
+        let currentSlide = 0;
+        function showSlide(n) {
+            slides.forEach(slide => slide.classList.remove('active'));
+            slides[n].classList.add('active');
+        }
+        function nextSlide() {
+            currentSlide = (currentSlide + 1) % slides.length;
             showSlide(currentSlide);
+        }
+        showSlide(currentSlide);
+        setInterval(nextSlide, 3000);
 
-            setInterval(nextSlide, 3000);
+        const form = document.getElementById('login-form');
+        const email = document.getElementById('email');
+        const password = document.getElementById('password');
+        const errorMessage = document.getElementById('error-message');
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            let hasError = false;
+
+            [email, password].forEach(input => {
+                if (input.value.trim() === '') {
+                    input.classList.add('input-error');
+                    hasError = true;
+                    setTimeout(() => input.classList.remove('input-error'), 400);
+                }
+            });
+
+            if (hasError) {
+                errorMessage.classList.add('active');
+            } else {
+                errorMessage.classList.remove('active');
+                window.location.href = 'loading.html';
+            }
         });
+    });
     </script>
 </body>
 </html>

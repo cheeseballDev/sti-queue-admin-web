@@ -28,12 +28,12 @@ public class QueueService {
         return "greetings!";
     }
 
+    /*
     @PostMapping("/next")
     public ResponseEntity<Map<String, Object>> callNextAdmissions(@PathVariable String queueServiceType) {
         // Extract data from the request body if needed
         DocumentReference admissionRef = firestore.collection("QUEUES").document(queueServiceType);
 
-        
         admissionRef.addSnapshotListener(
             new EventListener<DocumentSnapshot>() {
                 @Override
@@ -45,5 +45,7 @@ public class QueueService {
             }
         );
         return ;
+        
     }
+    */
 }
