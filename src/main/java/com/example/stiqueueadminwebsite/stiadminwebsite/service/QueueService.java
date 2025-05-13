@@ -1,5 +1,7 @@
 package com.example.stiqueueadminwebsite.stiadminwebsite.service;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -17,35 +19,53 @@ import com.google.cloud.firestore.Firestore;
 import com.google.firebase.database.annotations.Nullable;
 
 @RestController
-@RequestMapping("/api/queue")
+@RequestMapping("/api")
 public class QueueService {
 
-    @Autowired
     private Firestore firestore;
 
-    @GetMapping("/greeting")
-    public String greeting(){
-        return "greetings!";
+    @Autowired
+    public QueueService(Firestore firestore) {
+        this.firestore = firestore;
     }
 
-    /*
-    @PostMapping("/next")
-    public ResponseEntity<Map<String, Object>> callNextAdmissions(@PathVariable String queueServiceType) {
-        // Extract data from the request body if needed
-        DocumentReference admissionRef = firestore.collection("QUEUES").document(queueServiceType);
+    @PostMapping("/admissions/next")
+    public ResponseEntity<?> incrementAdmissionsQueue() {
+        return incrementQueue("admission");
+    }
 
-        admissionRef.addSnapshotListener(
-            new EventListener<DocumentSnapshot>() {
-                @Override
-                public void onEvent(@Nullable DocumentSnapshot snapshot) {
-                    if (snapshot.exists()) {
+    @PostMapping("/cashier/next")
+    public ResponseEntity<?> incrementCashierQueue() {
+        return incrementQueue("cashier");
+    }
 
-                    }
+    @PostMapping("/registrar/next")
+    public ResponseEntity<?> incrementRegistrarQueue() {
+        return incrementQueue("registrar");
+    }
+
+
+    public ResponseEntity<?> incrementQueue(String queueType) {
+        DocumentReference queueRef = firestore.collection("QUEUES").document(queueType);
+        try {
+            Map<String, Object> update = firestore.runTransaction(transaction -> {
+                DocumentSnapshot snapshot = transaction.get(queueRef).get();
+                Long currentNumber = snapshot.getLong("currentNumber");
+                if (currentNumber == null) {
+                    currentNumber = 0L;
                 }
-            }
-        );
-        return ;
-        
+                long nextNumber = currentNumber + 1;
+                transaction.update(queueRef, "currentService", nextNumber);
+                Map<String, Object> result = new HashMap<>();
+                result.put("nextQueueNumber", nextNumber);
+                return result;
+            }).get();
+
+            return ResponseEntity.ok(update);
+
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to increment queue.");
+        }
     }
-    */
 }

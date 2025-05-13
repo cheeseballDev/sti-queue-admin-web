@@ -2,9 +2,6 @@ function callNext(queueId) {
   let queueElement = document.getElementById(queueId);
   let queueNumber = parseInt(queueElement.innerText);
   incrementQueue();
-  if (queueNumber > 0) {
-    queueElement.innerText = queueNumber - 1;
-  }
 }
 
 async function incrementQueue() {
@@ -14,7 +11,9 @@ async function incrementQueue() {
 
     const activeTab = activeSpan.textContent.trim();
     
-    const response = await fetch(`/api/?tab=${encodeURIComponent(activeTab)}/`);
+    const response = await fetch(`/api/?tab=${encodeURIComponent(activeTab)}`, {
+      method: 'POST'
+    });
     const data = await response.json();
     console.log(data);
   } catch (error) {
@@ -25,9 +24,9 @@ async function incrementQueue() {
 function togglePause(button) {
   if (button.innerText.includes('Pause')) {
     button.innerText = 'Resume ▶';
-  } else {
-    button.innerText = 'Pause ⏸';
+    return;
   }
+  button.innerText = 'Pause ⏸';
 }
 
 function printForm() {
