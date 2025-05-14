@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.stiqueueadminwebsite.stiadminwebsite.firebase.FirebaseInitializer;
@@ -31,22 +32,22 @@ public class QueueService {
     }
 
     @GetMapping("/admissions/next")
-    public ResponseEntity<?> incrementAdmissionsQueue() {
-        return incrementQueue("admission");
+    public ResponseEntity<?> incrementAdmissionsQueue(@RequestParam int counterNumber) {
+        return incrementQueue("admission", counterNumber);
     }
 
     @GetMapping("/cashier/next")
-    public ResponseEntity<?> incrementCashierQueue() {
-        return incrementQueue("cashier");
+    public ResponseEntity<?> incrementCashierQueue(@RequestParam int counterNumber) {
+        return incrementQueue("cashier", counterNumber);
     }
 
     @GetMapping("/registrar/next")
-    public ResponseEntity<?> incrementRegistrarQueue() {
-        return incrementQueue("registrar");
+    public ResponseEntity<?> incrementRegistrarQueue(@RequestParam int counterNumber) {
+        return incrementQueue("registrar", counterNumber);
     }
 
 
-    public ResponseEntity<?> incrementQueue(String queueType) {
+    public ResponseEntity<?> incrementQueue(String queueType, int counterNumber) {
         DocumentReference queueRef = firestore.collection("QUEUES").document(queueType.toUpperCase());
         try {
             Map<String, Object> update = firestore.runTransaction(transaction -> {
@@ -57,7 +58,7 @@ public class QueueService {
                     return null;
                 }
                 long nextNumber = (currentServing == null ? 0 : currentServing) + 1;
-                transaction.update(queueRef, "currentService", nextNumber);
+                transaction.update(queueRef, "currentServing", nextNumber, "counter", counterNumber);
                 Map<String, Object> result = new HashMap<>();
                 result.put("nextQueueNumber", nextNumber);
                 return result;
