@@ -5,20 +5,47 @@ function callNext(queueId) {
 }
 
 async function incrementQueue() {
-  try {
-    const activeSpan = document.querySelector('.tabs span.active');
-    if (!activeSpan) return;
+    try {
+        const activeSpan = document.querySelector('.tabs span.active');
+        if (!activeSpan) return;
 
-    const activeTab = activeSpan.textContent.trim();
-    
-    const response = await fetch(`/api/?tab=${encodeURIComponent(activeTab)}`, {
-      method: 'POST'
-    });
-    const data = await response.json();
-    console.log(data);
-  } catch (error) {
-    console.error('Error:', error);
-  }
+        const activeTab = activeSpan.textContent.trim().toLowerCase();
+        let apiUrl = `/api/${activeTab}/next`;
+
+        const response = await fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            console.log(data);
+            const queueElement = document.getElementById(callNextQueueId);
+            if (queueElement && data.nextQueueNumber !== undefined) {
+                queueElement.innerText = data.nextQueueNumber;
+                // Optionally, clear any previous warning message
+                // document.getElementById('queueWarning').innerText = '';
+            } else if (data && data.warning) {
+                // Display the warning message to the admin
+                console.warn("Queue warning:", data.warning);
+                // You could update a specific element on your page to show this warning
+                // document.getElementById('queueWarning').innerText = data.warning;
+            } else if (response.status === 204) {
+                // Handle the No Content response (no increment)
+                console.warn("Queue is already at the current number.");
+                // Optionally display a message
+                // document.getElementById('queueWarning').innerText = "Queue is at the latest number.";
+            }
+        } else {
+            console.error('Error:', response.status);
+            // Handle other error scenarios
+        }
+
+    } catch (error) {
+        console.error('Error:', error);
+    }
 }
 
 function togglePause(button) {
