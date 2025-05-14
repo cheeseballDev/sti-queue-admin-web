@@ -1,9 +1,9 @@
+// ADD A FUCKING CLASS TO MAKE IT LOOK LIKE AN ACTUAL FILE FFS
+
 let callNextQueueId;
 
 function callNext(queueId) {
     let queueElement = document.getElementById(queueId);
-    //let queueNumber = parseInt(queueElement.innerText);
-
     let contentDiv = queueElement.closest('.content');
     let laneTitleElement = contentDiv.querySelector('.lane-title');
     let counterText = laneTitleElement.innerText.trim();
@@ -16,7 +16,8 @@ function callNext(queueId) {
     return;
 }
 
-async function updateDatabase() {
+//GET
+async function updateUI() {
     // add post function that gets the counter number button
 }
 
@@ -41,13 +42,9 @@ async function incrementQueue(counterNumber) {
             const queueElement = document.getElementById(callNextQueueId);
             if (queueElement && data.nextQueueNumber !== undefined) {
                 queueElement.innerText = data.nextQueueNumber;
-                // Optionally, clear any previous warning message
-                // document.getElementById('queueWarning').innerText = '';
             } else if (data && data.warning) {
-                // Display the warning message to the admin
+                // display warning message to the admin
                 console.warn("Queue warning:", data.warning);
-                // You could update a specific element on your page to show this warning
-                // document.getElementById('queueWarning').innerText = data.warning;
             } else if (response.status === 204) {
                 // Handle the No Content response (no increment)
                 console.warn("Queue is already at the current number.");
@@ -65,6 +62,7 @@ async function incrementQueue(counterNumber) {
 }
 
 function togglePause(button) {
+    // add the isOnBreak function here
     if (button.innerText.includes('Pause')) {
         button.innerText = 'Resume ▶';
         return;
@@ -72,7 +70,7 @@ function togglePause(button) {
     button.innerText = 'Pause ⏸';
     }
 
-    function printForm() {
+function printForm() {
     let printWindow = window.open('', '', 'height=500,width=800');
     printWindow.document.write('<html><head><title>Form</title></head><body>');
     printWindow.document.write('<h1>STI Queue Form</h1>');
@@ -80,4 +78,15 @@ function togglePause(button) {
     printWindow.document.write('</body></html>');
     printWindow.document.close();
     printWindow.print();
+}
+
+
+function resetQueues() {
+    const confirmReset = confirm("Do you really want to reset the Queue?");
+    if (confirmReset) {
+        document.getElementById("queueNumber1").innerText = "0";
+        document.getElementById("queueNumber2").innerText = "0";
+        document.getElementById("queueNumber3").innerText = "0";
     }
+}
+

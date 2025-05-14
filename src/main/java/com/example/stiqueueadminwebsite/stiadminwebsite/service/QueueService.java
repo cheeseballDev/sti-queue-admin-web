@@ -65,7 +65,7 @@ public class QueueService {
             }).get();
 
             if (update == null) {
-            return ResponseEntity.ok().body(Map.of("warning", "Queue is already at the current number."));
+                return ResponseEntity.ok().body(Map.of("warning", "Queue is already at the current number."));
             } else {
                 return ResponseEntity.ok(update);
             }
