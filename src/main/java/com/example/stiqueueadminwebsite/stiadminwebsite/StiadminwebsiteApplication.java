@@ -8,6 +8,5 @@ public class StiadminwebsiteApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(StiadminwebsiteApplication.class, args);
 	}
-
 }
 

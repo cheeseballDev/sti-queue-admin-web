@@ -31,23 +31,19 @@ public class QueueService {
         this.firestore = firestore;
     }
 
-    @GetMapping("/admissions/next")
-    public ResponseEntity<?> incrementAdmissionsQueue(@RequestParam int counterNumber) {
-        return incrementQueue("admission", counterNumber);
+    // make it all into one post mapping 
+
+    @PostMapping("/{queueType}/next")
+    public ResponseEntity<?> incrementQueue(@RequestParam String queueType, @RequestParam int counterNumber) {
+        return incrementDatabase(queueType, counterNumber);
     }
 
-    @GetMapping("/cashier/next")
-    public ResponseEntity<?> incrementCashierQueue(@RequestParam int counterNumber) {
-        return incrementQueue("cashier", counterNumber);
-    }
+    @PostMapping("/{queueType}/pause")
+    public ResponseEntity<?> toggleIsOnBreak(@RequestParam String queueType, @RequestParam int counterNumber) {
+        return toggleBreak(queueType, counterNumber);
+    } 
 
-    @GetMapping("/registrar/next")
-    public ResponseEntity<?> incrementRegistrarQueue(@RequestParam int counterNumber) {
-        return incrementQueue("registrar", counterNumber);
-    }
-
-
-    public ResponseEntity<?> incrementQueue(String queueType, int counterNumber) {
+    public ResponseEntity<?> incrementDatabase(String queueType, int counterNumber) {
         DocumentReference queueRef = firestore.collection("QUEUES").document(queueType.toUpperCase());
         try {
             Map<String, Object> update = firestore.runTransaction(transaction -> {
@@ -66,10 +62,33 @@ public class QueueService {
 
             if (update == null) {
                 return ResponseEntity.ok().body(Map.of("warning", "Queue is already at the current number."));
-            } else {
-                return ResponseEntity.ok(update);
             }
+            return ResponseEntity.ok(update);
         } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to increment queue.");
+        }
+    }
+
+    public ResponseEntity<?> toggleBreak(String activeQueueType, int counterNumber) {
+        DocumentReference queueRef = firestore.collection("QUEUES").document(activeQueueType.toUpperCase());
+        try {
+            Map<String, Object> update = firestore.runTransaction(transaction -> {
+                DocumentSnapshot snapshot = transaction.get(queueRef).get();
+                Boolean isOnBreak = snapshot.getBoolean("isOnBreak");
+                Map<String, Object> result = new HashMap<>();
+                if (isOnBreak) {
+                    transaction.update(queueRef, "isOnBreak", false);
+                    result.put("isOnBreak", isOnBreak);
+                    return result;
+                }
+                transaction.update(queueRef, "isOnBreak", true);
+                result.put("isOnBreak", isOnBreak);
+                return result;
+            }).get();
+
+            return ResponseEntity.ok(update);
+        } catch (ExecutionException | InterruptedException e){ 
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to increment queue.");
         }

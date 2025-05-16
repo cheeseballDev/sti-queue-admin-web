@@ -1,63 +1,51 @@
 // ADD A FUCKING CLASS TO MAKE IT LOOK LIKE AN ACTUAL FILE FFS
-
 let callNextQueueId;
-
+let queueElement = document.getElementById(queueId);
+let contentDiv = queueElement.closest('.content');
+let laneTitleElement = contentDiv.querySelector('.lane-title');
+    
 function callNext(queueId) {
-    let queueElement = document.getElementById(queueId);
-    let contentDiv = queueElement.closest('.content');
-    let laneTitleElement = contentDiv.querySelector('.lane-title');
-    let counterText = laneTitleElement.innerText.trim();
-    let counterNumber = parseInt(counterText.split(' ')[1]);
     callNextQueueId = queueId;
 
-    console.log("Counter Number:", counterNumber);
+    let counterText = laneTitleElement.innerText.trim();
+    let counterNumber = parseInt(counterText.split(' ')[1]);
 
-    incrementQueue(counterNumber);
+    let activeQueueType = document.querySelector('.tabs span.active');
+    let queueType = activeQueueType.textContent.trim().toLowerCase();
+    
+    incrementQueue(queueType, counterNumber);
     return;
 }
 
 //GET
 async function updateUI() {
-    // add post function that gets the counter number button
+    // add a GET function that gets the counter number button
 }
 
-async function incrementQueue(counterNumber) {
-    try {
-        const activeSpan = document.querySelector('.tabs span.active');
-        if (!activeSpan) return;
+async function incrementQueue(queueType, counterNumber) {
+    let apiUrl = `/api/${queueType}/next?queueType=${encodeURIComponent(queueType)}&counterNumber=${encodeURIComponent(counterNumber)}`;
 
-        const activeTab = activeSpan.textContent.trim().toLowerCase();
-        let apiUrl = `/api/${activeTab}/next?counterNumber=${encodeURIComponent(counterNumber)}`;
-
-        const response = await fetch(apiUrl, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            console.log(data);
-            const queueElement = document.getElementById(callNextQueueId);
-            if (queueElement && data.nextQueueNumber !== undefined) {
-                queueElement.innerText = data.nextQueueNumber;
-            } else if (data && data.warning) {
-                // display warning message to the admin
-                console.warn("Queue warning:", data.warning);
-            } else if (response.status === 204) {
-                // Handle the No Content response (no increment)
-                console.warn("Queue is already at the current number.");
-                // Optionally display a message
-                // document.getElementById('queueWarning').innerText = "Queue is at the latest number.";
-            }
-        } else {
-            console.error('Error:', response.status);
-            // Handle other error scenarios
+    const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
         }
+    });
 
-    } catch (error) {
-        console.error('Error:', error);
+    if (response.ok) {
+        const data = await response.json();
+        console.log(data);
+        const queueElement = document.getElementById(callNextQueueId);
+        if (queueElement && data.nextQueueNumber !== undefined) {
+            queueElement.innerText = data.nextQueueNumber;
+        } else if (data && data.warning) {
+            // display warning message to the admin
+            console.warn("Queue warning:", data.warning);
+        } else if (response.status === 204) {
+            // Handle the No Content response (no increment)
+            console.warn("Queue is already at the current number.");
+            // document.getElementById('queueWarning').innerText = "Queue is at the latest number.";
+        }
     }
 }
 
@@ -65,10 +53,33 @@ function togglePause(button) {
     // add the isOnBreak function here
     if (button.innerText.includes('Pause')) {
         button.innerText = 'Resume ▶';
+        
+        let activeQueueType = document.querySelector('.tabs span.active');
+        let queueType = activeQueueType.textContent.trim().toLowerCase();
+
+        let counterText = laneTitleElement.innerText.trim();
+        let counterNumber = parseInt(counterText.split(' ')[1]);
+        setOnBreak(queueType, counterNumber);
         return;
     }
     button.innerText = 'Pause ⏸';
+}
+
+async function setOnPause(queueType, counterNumber) {
+    let apiUrl = `/api/${queueType}/pause?queueType=${encodeURIComponent(queueType)}&counterNumber=${encodeURIComponent(counterNumber)}`;
+
+    const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    });
+
+    if (response.ok) {
+        const data = await response.json();
+        console.log(data);
     }
+} 
 
 function printForm() {
     let printWindow = window.open('', '', 'height=500,width=800');
