@@ -1,85 +1,126 @@
-// ADD A FUCKING CLASS TO MAKE IT LOOK LIKE AN ACTUAL FILE FFS
-let callNextQueueId;
-let queueElement = document.getElementById(queueId);
-let contentDiv = queueElement.closest('.content');
-let laneTitleElement = contentDiv.querySelector('.lane-title');
+let queueInfo
+
+function getQueueInfo(queueId) {
+    const queueElement = document.getElementById(queueId);
     
+    const contentDiv = queueElement.closest('.content');
+    const laneTitleElement = contentDiv.querySelector('.lane-title');
+
+    const counterText = laneTitleElement.innerText.trim();
+    const counterNumber = parseInt(counterText.split(' ')[1]);
+    const activeQueueType = document.querySelector('.tabs span.active');
+
+    const queueType = activeQueueType.textContent.trim().toLowerCase();
+
+    return { queueElement, counterNumber, queueType };
+}
+
 function callNext(queueId) {
-    callNextQueueId = queueId;
-
-    let counterText = laneTitleElement.innerText.trim();
-    let counterNumber = parseInt(counterText.split(' ')[1]);
-
-    let activeQueueType = document.querySelector('.tabs span.active');
-    let queueType = activeQueueType.textContent.trim().toLowerCase();
-    
-    incrementQueue(queueType, counterNumber);
-    return;
+    const queueInfo = getQueueInfo(queueId);
+    if (!queueInfo) return;
+    incrementQueue(queueInfo.queueType, queueInfo.counterNumber, queueId);
 }
 
-//GET
-async function updateUI() {
-    // add a GET function that gets the counter number button
-}
+async function incrementQueue(queueType, counterNumber, queueId) {
+    const apiUrl = `/api/${queueType}/next?queueType=${encodeURIComponent(queueType)}&counterNumber=${encodeURIComponent(counterNumber)}`;
 
-async function incrementQueue(queueType, counterNumber) {
-    let apiUrl = `/api/${queueType}/next?queueType=${encodeURIComponent(queueType)}&counterNumber=${encodeURIComponent(counterNumber)}`;
+    try {
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
 
-    const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
+        if (response.status == 204) {
+            showNotification("Queue is already at the current number.", "info");
+            return;
         }
-    });
 
-    if (response.ok) {
-        const data = await response.json();
-        console.log(data);
-        const queueElement = document.getElementById(callNextQueueId);
-        if (queueElement && data.nextQueueNumber !== undefined) {
-            queueElement.innerText = data.nextQueueNumber;
-        } else if (data && data.warning) {
-            // display warning message to the admin
-            console.warn("Queue warning:", data.warning);
-        } else if (response.status === 204) {
-            // Handle the No Content response (no increment)
-            console.warn("Queue is already at the current number.");
-            // document.getElementById('queueWarning').innerText = "Queue is at the latest number.";
-        }
+        if (response.ok) {
+            const data = await response.json();
+            console.log(data);
+            const queueElement = document.getElementById(queueId);
+            if (queueElement && data.nextQueueNumber !== undefined) {
+                queueElement.innerText = data.nextQueueNumber;
+            }
+        } 
+    } catch (error) {
+        showNotification(`A server error has occured while incrementing!`, "error")
     }
 }
 
-function togglePause(button) {
-    // add the isOnBreak function here
-    if (button.innerText.includes('Pause')) {
-        button.innerText = 'Resume ▶';
-        
-        let activeQueueType = document.querySelector('.tabs span.active');
-        let queueType = activeQueueType.textContent.trim().toLowerCase();
+function togglePause(button, queueId) {
+    const isPausing = button.innerText.includes('Pause');
+    const newButtonText = isPausing ? 'Resume ▶' : 'Pause ⏸';
+    button.innerText = newButtonText;
 
-        let counterText = laneTitleElement.innerText.trim();
-        let counterNumber = parseInt(counterText.split(' ')[1]);
-        setOnBreak(queueType, counterNumber);
-        return;
+    const queueInfo = getQueueInfo(queueId);
+    if (queueInfo) {
+        setOnBreak(queueInfo.queueType, queueInfo.counterNumber, isPausing);
     }
-    button.innerText = 'Pause ⏸';
+    setOnBreak(queueInfo.queueType, queueInfo.counterNumber, isPausing);
 }
 
-async function setOnPause(queueType, counterNumber) {
-    let apiUrl = `/api/${queueType}/pause?queueType=${encodeURIComponent(queueType)}&counterNumber=${encodeURIComponent(counterNumber)}`;
+async function setOnBreak(queueType, counterNumber, isPausing) {
+    const action = isPausing ? 'pause' : 'resume';
+    const apiUrl = `/api/${queueType}/togglepause?queueType=${encodeURIComponent(queueType)}&counterNumber=${encodeURIComponent(counterNumber)}`;
 
-    const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    });
+    try {
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
 
-    if (response.ok) {
-        const data = await response.json();
-        console.log(data);
+        if (response.ok) {
+            const data = await response.json();
+            console.log(data);
+        } else {
+            showNotification(`Failed to ${action} queue: ${response.status}`, "error")
+        }   
+    } catch (error) {
+        showNotification(`Error during toggling pause:`, "error")
     }
-} 
+}
+
+
+function connectWebSocket(queueType) {
+    const websocketUrl = `ws://localhost:8080/ws/queue/${queueType}`; // Replace with your actual backend URL and port
+    const websocket = new WebSocket(websocketUrl);
+
+    websocket.onmessage = (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            if (data.currentServing !== undefined) {
+                console.log(`Real-time update for ${queueType}: Current Serving - ${data.currentServing}`);
+                const servingDisplay = document.getElementById(`${queueType}-current-serving`);
+                if (servingDisplay) {
+                    servingDisplay.innerText = data.currentServing;
+                }
+            }
+        } catch (error) {
+            console.error("Error parsing WebSocket message:", error);
+        }
+    };
+
+    websocket.onclose = () => {
+        console.log(`WebSocket connection closed for ${queueType}`);
+        setTimeout(() => {
+            connectWebSocket(queueType);
+        }, 3000);
+    };
+
+    websocket.onerror = (error) => {
+        console.error(`WebSocket error for ${queueType}:`, error);
+    };
+}
+
+connectWebSocket('admission');
+connectWebSocket('cashier');
+connectWebSocket('registrar');
+
 
 function printForm() {
     let printWindow = window.open('', '', 'height=500,width=800');
@@ -91,13 +132,62 @@ function printForm() {
     printWindow.print();
 }
 
-
 function resetQueues() {
-    const confirmReset = confirm("Do you really want to reset the Queue?");
-    if (confirmReset) {
-        document.getElementById("queueNumber1").innerText = "0";
-        document.getElementById("queueNumber2").innerText = "0";
-        document.getElementById("queueNumber3").innerText = "0";
+    swal({
+        title: "WARNING:",
+        text: "Do you really want to reset the queue?",
+        icon: "warning",
+        dangerMode: true,
+        buttons: {
+            cancel: "No",
+            confirm: {
+                text: "Yes",
+                value: true
+            }
+        }
+    })
+    .then((value) => {
+        if (value) {
+            const activeQueueTypeElement = document.querySelector('.tabs span.active');
+            if (activeQueueTypeElement) {
+                const queueType = activeQueueTypeElement.textContent.trim().toLowerCase();
+                for (let i = 1; i <= 3; i++) {
+                    clearTickets(queueType, i);
+                }
+            }
+            document.getElementById("queueNumber1").innerText = "0";
+            document.getElementById("queueNumber2").innerText = "0";
+            document.getElementById("queueNumber3").innerText = "0";
+        }
+    });
+}
+
+async function clearTickets(queueType, counterNumber) {
+    const apiUrl = `/api/${queueType}/clear?queueType=${encodeURIComponent(queueType)}&counterNumber=${encodeURIComponent(counterNumber)}`;
+
+    try {
+        const response = await fetch(apiUrl, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            swal("Success!", "Cleared all tickets for this queue!", "success");
+        } else {
+            showNotification(`Failed to ${action} queue: ${response.status}`, "error")
+        }   
+    } catch (error) {
+        showNotification(`Error during ${action}:`, "error")
     }
+}
+
+function showNotification(message, iconType) {
+    swal({
+        title: "INFORMATION",
+        text: message,
+        icon: iconType,
+    })
 }
 

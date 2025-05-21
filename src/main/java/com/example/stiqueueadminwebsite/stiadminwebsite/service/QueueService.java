@@ -1,24 +1,29 @@
 package com.example.stiqueueadminwebsite.stiadminwebsite.service;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.stiqueueadminwebsite.stiadminwebsite.firebase.FirebaseInitializer;
+import com.google.api.core.ApiFuture;
+import com.google.cloud.firestore.CollectionReference;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
-import com.google.firebase.database.annotations.Nullable;
+import com.google.cloud.firestore.QueryDocumentSnapshot;
+import com.google.cloud.firestore.QuerySnapshot;
+
+import model.QueueModel;
+
 
 @RestController
 @RequestMapping("/api")
@@ -26,22 +31,25 @@ public class QueueService {
 
     private Firestore firestore;
 
-    @Autowired
     public QueueService(Firestore firestore) {
         this.firestore = firestore;
     }
 
-    // make it all into one post mapping 
-
+    
     @PostMapping("/{queueType}/next")
     public ResponseEntity<?> incrementQueue(@RequestParam String queueType, @RequestParam int counterNumber) {
         return incrementDatabase(queueType, counterNumber);
     }
 
-    @PostMapping("/{queueType}/pause")
-    public ResponseEntity<?> toggleIsOnBreak(@RequestParam String queueType, @RequestParam int counterNumber) {
-        return toggleBreak(queueType, counterNumber);
+    @PostMapping("/{queueType}/togglepause")
+    public ResponseEntity<?> pauseQueue(@RequestParam String queueType, @RequestParam int counterNumber) {
+        return togglePause(queueType, counterNumber);
     } 
+
+    @DeleteMapping("/{queueType}/clear")
+    public ResponseEntity<?> clearQueue(@RequestParam String queueType) {
+        return clearAllTickets(queueType);
+    }
 
     public ResponseEntity<?> incrementDatabase(String queueType, int counterNumber) {
         DocumentReference queueRef = firestore.collection("QUEUES").document(queueType.toUpperCase());
@@ -61,7 +69,7 @@ public class QueueService {
             }).get();
 
             if (update == null) {
-                return ResponseEntity.ok().body(Map.of("warning", "Queue is already at the current number."));
+                return ResponseEntity.noContent().build();
             }
             return ResponseEntity.ok(update);
         } catch (ExecutionException | InterruptedException e) {
@@ -70,19 +78,21 @@ public class QueueService {
         }
     }
 
-    public ResponseEntity<?> toggleBreak(String activeQueueType, int counterNumber) {
+    public ResponseEntity<?> togglePause(String activeQueueType, int counterNumber) {
+        int currentCounter = counterNumber;
         DocumentReference queueRef = firestore.collection("QUEUES").document(activeQueueType.toUpperCase());
         try {
             Map<String, Object> update = firestore.runTransaction(transaction -> {
                 DocumentSnapshot snapshot = transaction.get(queueRef).get();
                 Boolean isOnBreak = snapshot.getBoolean("isOnBreak");
-                Map<String, Object> result = new HashMap<>();
                 if (isOnBreak) {
-                    transaction.update(queueRef, "isOnBreak", false);
+                    transaction.update(queueRef, "isOnBreak", false, "counter", currentCounter);
+                    Map<String, Object> result = new HashMap<>();
                     result.put("isOnBreak", isOnBreak);
                     return result;
                 }
-                transaction.update(queueRef, "isOnBreak", true);
+                transaction.update(queueRef, "isOnBreak", true, "counter", currentCounter);
+                Map<String, Object> result = new HashMap<>();
                 result.put("isOnBreak", isOnBreak);
                 return result;
             }).get();
@@ -92,5 +102,50 @@ public class QueueService {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to increment queue.");
         }
+    }
+
+    public ResponseEntity<?> clearAllTickets(String activeQueueType) {
+        CollectionReference ticketsCollectionReference = firestore.collection("TICKETS");
+        DocumentReference queueRef = firestore.collection("QUEUES").document(activeQueueType.toUpperCase());
+
+        try {
+            ApiFuture<Void> transactionResult = firestore.runTransaction(transaction -> {
+                DocumentSnapshot snapshot = transaction.get(queueRef).get();
+                Map<String, Object> updates = new HashMap<>();
+                for (int i = 1; i < 4; i++) 
+                    transaction.update(queueRef, "currentNumber", 0, "counter", i);
+                return null;
+            });
+        
+        while (true) {
+                ApiFuture<QuerySnapshot> queryFuture = ticketsCollectionReference
+                    .whereEqualTo("service", activeQueueType)
+                    .limit(50)
+                    .get();
+
+                List<QueryDocumentSnapshot> documents = queryFuture.get().getDocuments();
+
+                if (documents.isEmpty()) {
+                    return null;
+                }
+
+                com.google.cloud.firestore.WriteBatch batch = firestore.batch();
+                for (QueryDocumentSnapshot document : documents) {
+                    batch.delete(document.getReference());
+                }
+
+                ApiFuture<List<com.google.cloud.firestore.WriteResult>> batchFuture = batch.commit();
+                batchFuture.get(10, TimeUnit.SECONDS);
+
+                if (documents.size() < 500) {
+                    break;
+                }
+            }
+                return ResponseEntity.ok("Successfully cleared queue " + activeQueueType + " and its tickets.");
+                
+            } catch (Exception e) {
+            Thread.currentThread().interrupt();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error clearing tickets: " + e.getMessage());
+            }
     }
 }

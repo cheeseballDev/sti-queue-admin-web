@@ -273,3 +273,12 @@ label {
   background-color: #f44336;
   color: white;
 }
+
+.swal-footer {
+  display: flex;
+  justify-content: center;
+}
+
+.swal-footer .swal-button {
+  margin: 0 5px;
+}

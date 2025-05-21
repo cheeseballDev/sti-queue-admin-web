@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "riot": "^9.4.7",
+    "sweetalert": "^2.1.2"
+  }
+}

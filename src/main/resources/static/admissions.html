@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admission - Queue</title>
   <link rel="stylesheet" href="css/styles.css">
+  <script src="js/script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert" type="module"></script>
 </head>
 
 <body>
@@ -38,7 +40,7 @@
         <div class="controls">
           <button onclick="callNext('queueNumber1')">Call Next ▶</button>
           
-          <button onclick="togglePause(this)">Pause/Resume ⏸</button>
+          <button onclick="togglePause(this, 'queueNumber1')">Pause/Resume ⏸</button>
 
           <label>Cut-off Number: <input type="number" value="00"></label>
           
@@ -55,7 +57,7 @@
         <div class="controls">
           <button onclick="callNext('queueNumber2')">Call Next ▶</button>
           
-          <button onclick="togglePause(this)">Pause/Resume ⏸</button>
+          <button onclick="togglePause(this, 'queueNumber2')">Pause/Resume ⏸</button>
           
           <label>Cut-off Number: <input type="number" value="00"></label>
           
@@ -73,7 +75,7 @@
           
           <button onclick="callNext('queueNumber3')">Call Next ▶</button>
           
-          <button onclick="togglePause(this)">Pause/Resume ⏸</button>
+          <button onclick="togglePause(this, 'queueNumber3')">Pause/Resume ⏸</button>
           
           <label>Cut-off Number: <input type="number" value="00"></label>
           
@@ -101,6 +103,6 @@
 
     </div>
   </div>
-  <script src="js/script.js"></script>
+  
 </body>
 </html>
