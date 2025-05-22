@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Registrar - Queue</title>
   <link rel="stylesheet" href="css/styles.css">
-  <script src="js/script.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert" type="module"></script>
-</head>
+  <script src="js/script.js"></script> 
+  <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+  </head>
+
 <body>
   <div class="header">
     <img src="sti-logo.png" alt="STI Logo">
@@ -23,14 +24,14 @@
       <a href="#">About</a>
       <button class="back-button" onclick="window.location.href='login.html'">⬅</button>
     </div>
-    
+
     <div class="container">
       <div class="tabs">
         <span class="" onclick="window.location.href='cashier.html'">Cashier</span>
-        <span class="" onclick="window.location.href='admissions.html'">Admissions</span>
+        <span class="" onclick="window.location.href='admissions.html'">Admission</span>
         <span class="active" onclick="window.location.href='registrar.html'">Registrar</span>
       </div>
-      
+
       <div class="content">
         <div class="queue-box">
           <div class="lane-title">Counter 1</div><br>
@@ -38,14 +39,16 @@
         </div>
         <div class="controls">
           <button onclick="callNext('queueNumber1')">Call Next ▶</button>
-          
-          <button onclick="togglePause(this)">Pause/Resume ⏸</button>
-          
+
+          <button onclick="togglePause(this, 'queueNumber1')">Pause/Resume ⏸</button>
+
           <label>Cut-off Number: <input type="number" value="00"></label>
-          
+
           <label><input type="checkbox" checked> Prioritize PWD</label>
         </div>
       </div><hr style="border-top: 2px solid #ccc; margin: 30px 0;">
+
+
       <div class="content">
         <div class="queue-box">
           <div class="lane-title">Counter 2</div><br>
@@ -53,29 +56,33 @@
         </div>
         <div class="controls">
           <button onclick="callNext('queueNumber2')">Call Next ▶</button>
-          
-          <button onclick="togglePause(this)">Pause/Resume ⏸</button>
-          
+
+          <button onclick="togglePause(this, 'queueNumber2')">Pause/Resume ⏸</button>
+
           <label>Cut-off Number: <input type="number" value="00"></label>
-          
+
           <label><input type="checkbox" checked> Prioritize PWD</label>
         </div>
       </div><hr style="border-top: 2px solid #ccc; margin: 30px 0;">
+
+
       <div class="content">
         <div class="queue-box">
           <div class="lane-title">Counter 3</div><br>
           Queue Number: <span id="queueNumber3">0</span>
         </div>
         <div class="controls">
+
           <button onclick="callNext('queueNumber3')">Call Next ▶</button>
-          
-          <button onclick="togglePause(this)">Pause/Resume ⏸</button>
-          
+
+          <button onclick="togglePause(this, 'queueNumber3')">Pause/Resume ⏸</button>
+
           <label>Cut-off Number: <input type="number" value="00"></label>
-          
+
           <label><input type="checkbox" checked> Prioritize PWD</label>
         </div>
       </div><hr style="border-top: 2px solid #ccc; margin: 30px 0;">
+
       <div class="print-section">
         <h3>Need to print a form?</h3>
         <button onclick="printForm()">🖨️ Print Form</button>
@@ -84,6 +91,13 @@
         <button onclick="resetQueues()">🔁 Reset All Queues</button>
       </div>
 
+      <div class="global-tickets-list-section" style="margin-top: 30px;">
+        <h3>All Active Tickets</h3>
+        <ul id="ticketsList">
+            <li>Loading tickets...</li>
+        </ul>
+      </div>
+      <hr style="border-top: 2px solid #ccc; margin: 30px 0;">
       <div id="resetModal" class="modal">
         <div class="modal-content">
           <p>Do you really want to reset the Queue?</p>
@@ -93,7 +107,9 @@
           </div>
         </div>
       </div>
+
     </div>
   </div>
+
 </body>
 </html>

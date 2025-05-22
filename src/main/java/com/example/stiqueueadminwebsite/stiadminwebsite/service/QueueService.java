@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,9 +20,8 @@ import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
 import com.google.cloud.firestore.QuerySnapshot;
-
-import model.QueueModel;
-
+import com.google.cloud.firestore.WriteBatch;
+import com.google.cloud.firestore.WriteResult;
 
 @RestController
 @RequestMapping("/api")
@@ -117,7 +115,7 @@ public class QueueService {
                 return null;
             });
         
-        while (true) {
+            while (true) {
                 ApiFuture<QuerySnapshot> queryFuture = ticketsCollectionReference
                     .whereEqualTo("service", activeQueueType)
                     .limit(50)
@@ -129,12 +127,12 @@ public class QueueService {
                     return null;
                 }
 
-                com.google.cloud.firestore.WriteBatch batch = firestore.batch();
+                WriteBatch batch = firestore.batch();
                 for (QueryDocumentSnapshot document : documents) {
                     batch.delete(document.getReference());
                 }
 
-                ApiFuture<List<com.google.cloud.firestore.WriteResult>> batchFuture = batch.commit();
+                ApiFuture<List<WriteResult>> batchFuture = batch.commit();
                 batchFuture.get(10, TimeUnit.SECONDS);
 
                 if (documents.size() < 500) {
