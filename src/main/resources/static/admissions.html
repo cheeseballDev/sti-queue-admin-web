@@ -5,9 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admission - Queue</title>
   <link rel="stylesheet" href="css/styles.css">
-  <script src="js/script.js"></script> 
-  <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
-  </head>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "sweetalert": "./node_modules/sweetalert/dist/sweetalert.min.js",
+        "riot": "https://cdn.jsdelivr.net/npm/riot@latest/riot.min.js"
+      }
+    }
+  </script>
+  <script type ="module" defer src="js/script.js"></script> 
+</head>
 
 <body>
   <div class="header">

@@ -2,13 +2,13 @@ package com.example.stiqueueadminwebsite.stiadminwebsite.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
@@ -18,64 +18,89 @@ import com.google.cloud.firestore.QuerySnapshot;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 
 @Component 
 public class SimpleWebSocketHandler extends TextWebSocketHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(SimpleWebSocketHandler.class);
-    private final Set<WebSocketSession> sessions = Collections.synchronizedSet(new HashSet<>());
+    private final Map<WebSocketSession, String> activeSessions = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper;
     private final Firestore firestore;
 
-
-    @Autowired
     public SimpleWebSocketHandler(ObjectMapper objectMapper, Firestore firestore) {
         this.objectMapper = objectMapper;
         this.firestore = firestore;
     }
 
-
-
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        sessions.add(session);
         logger.info("WebSocket connection established: Session ID - {}", session.getId());
-
         sendInitialCounterStates(session);
-        sendInitialAllTicketsState(session);
+    }
+
+    @Override
+    protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+        String payload = message.getPayload();
+        logger.debug("Received message from {}: {}", session.getId(), payload);
+
+        Map<String, Object> msg = objectMapper.readValue(payload, new TypeReference<Map<String, Object>>() {});
+        String type = (String) msg.get("type");
+
+        // Handle the REGISTER_SERVICE message from the frontend
+        if ("CURRENT_SERVICE".equals(type)) {
+            String serviceType = (String) msg.get("serviceType");
+            if (serviceType != null && !serviceType.isEmpty()) {
+                activeSessions.put(session, serviceType.toLowerCase());
+                logger.info("Session {} registered for service type: {}", session.getId(), serviceType);
+                sendInitialTicketsForSession(session);
+            } else {
+                logger.warn("Session {} sent REGISTER_SERVICE without a serviceType.", session.getId());
+            }
+        }
+        // Add other message handling here if your frontend sends other commands
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        sessions.remove(session);
+        activeSessions.remove(session);
         logger.info("WebSocket connection closed: Session ID - {}, Status - {}", session.getId(), status.getCode());
     }
 
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
         logger.error("WebSocket transport error for session {}: {}", session.getId(), exception.getMessage(), exception);
-        sessions.remove(session); // Remove session on error
+        activeSessions.remove(session);
     }
 
     public void sendMessageToAllSessions(String message) {
-        // Iterate over a copy to avoid ConcurrentModificationException if a session closes during iteration
-        for (WebSocketSession session : new HashSet<>(sessions)) {
+        for (Map.Entry<WebSocketSession, String> entry : activeSessions.entrySet()) {
+            WebSocketSession session = entry.getKey();
             if (session.isOpen()) {
                 try {
                     session.sendMessage(new TextMessage(message));
-                    logger.debug("Message sent to session {}: {}", session.getId(), message);
                 } catch (IOException e) {
-                    logger.error("Error sending message to session {}: {}", session.getId(), e.getMessage());
-                    // Consider removing the session if sending fails repeatedly
+                    logger.error("Error sending message to all session {}: {}", session.getId(), e.getMessage(), e);
                 }
-            } else {
-                logger.warn("Attempted to send message to closed session: {}", session.getId());
-                sessions.remove(session); // Clean up closed sessions
+            }
+        }
+    }
+
+    public void sendMessageToServiceSessions(String targetServiceType, String message) {
+        for (Map.Entry<WebSocketSession, String> entry : activeSessions.entrySet()) {
+            WebSocketSession session = entry.getKey();
+            String sessionServiceType = entry.getValue();
+
+            if (session.isOpen() && targetServiceType.equalsIgnoreCase(sessionServiceType)) {
+                try {
+                    session.sendMessage(new TextMessage(message));
+                    logger.debug("Sent targeted message to session {} for service {}: {}", session.getId(), targetServiceType, message);
+                } catch (IOException e) {
+                    logger.error("Error sending message to session {}: {}", session.getId(), e.getMessage(), e);
+                }
             }
         }
     }
@@ -130,36 +155,38 @@ public class SimpleWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    private void sendInitialAllTicketsState(WebSocketSession session) {
-        try {
-            Query allTicketsQuery = firestore.collection("TICKETS")
-                    .whereIn("status", List.of("WAITING", "SERVING"))
-                    .orderBy("number"); // Order by ticket number
-            QuerySnapshot snapshot = allTicketsQuery.get().get();
-            List<Map<String, Object>> ticketsData = new ArrayList<>();
-            if (!snapshot.isEmpty()) { // Check if the snapshot contains documents
-                for (DocumentSnapshot doc : snapshot.getDocuments()) {
-                    Map<String, Object> ticket = doc.getData();
-                    if (ticket != null) {
-                        ticket.put("id", doc.getId());
-                        // add other ticket properties here
-                        ticketsData.add(ticket);
-                    }
-                    Map<String, Object> payload = Map.of(
-                        "type", "TICKET_UPDATE",
-                        "tickets", ticketsData
-                    );
-                try {
-                    String jsonPayload = objectMapper.writeValueAsString(payload);
-                    session.sendMessage(new TextMessage(jsonPayload));
-                    logger.debug("Sent initial TICKET_UPDATE (all tickets) to new session {}", session.getId());
-                } catch (IOException e) {
-                    logger.error("Error sending initial TICKET_UPDATE to session {}: {}", session.getId(), e.getMessage(), e);
-                }
+    private void sendInitialTicketsForSession(WebSocketSession session) throws IOException, ExecutionException, InterruptedException {
+        String serviceType = activeSessions.get(session); // Get the serviceType for this session
+
+        if (serviceType == null || serviceType.isEmpty()) {
+            logger.warn("Attempted to send initial tickets to session {} without registered serviceType.", session.getId());
+            return;
+        }
+
+        Query ticketsQuery = firestore.collection("TICKETS")
+                .whereEqualTo("service", serviceType)
+                .orderBy("number");
+
+        QuerySnapshot snapshots = ticketsQuery.get().get(); // Blocking call
+
+        List<Map<String, Object>> ticketsData = new ArrayList<>();
+        for (DocumentSnapshot doc : snapshots.getDocuments()) {
+            Map<String, Object> ticket = doc.getData();
+            if (ticket != null) {
+                ticket.put("id", doc.getId());
+                ticketsData.add(ticket);
             }
         }
-        } catch (Exception e) {
-            logger.error("Error fetching initial state for all tickets: {}", e.getMessage(), e);
+
+        Map<String, Object> payload = Map.of(
+            "type", "TICKET_UPDATE",
+            "serviceType", serviceType,
+            "tickets", ticketsData
+        );
+        String jsonPayload = objectMapper.writeValueAsString(payload);
+        if (session.isOpen()) {
+            session.sendMessage(new TextMessage(jsonPayload));
         }
+        logger.debug("Sent initial TICKET_UPDATE for service {} to session {}", serviceType, session.getId());
     }
 }

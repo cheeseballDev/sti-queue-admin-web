@@ -1,16 +1,11 @@
+import { component } from 'riot';
+import swal from 'sweetalert';
+
 const counterElementIds = {
     'counter1Serving': 'queueNumber1',
     'counter2Serving': 'queueNumber2',
     'counter3Serving': 'queueNumber3',
 };
-
-// Get a reference to the SINGLE tickets list element
-const ticketsListElement = document.getElementById("ticketsList");
-if (!ticketsListElement) {
-    console.error("Error: Element with ID 'ticketsList' not found in HTML. Please ensure it's added.");
-} else {
-    ticketsListElement.innerHTML = '<li>Loading all active tickets...</li>'; // Initial state for global list
-}
 
 /*
     BUTTON FUNCTIONS (These functions interact with the specific counters on the current page)
@@ -18,27 +13,20 @@ if (!ticketsListElement) {
 
 function getQueueInfo(queueId) {
     const queueElement = document.getElementById(queueId);
-    if (!queueElement) { /* ... error handling ... */ return null; }
 
     const contentDiv = queueElement.closest('.content');
-    if (!contentDiv) { /* ... error handling ... */ return null; }
 
     const laneTitleElement = contentDiv.querySelector('.lane-title');
-    if (!laneTitleElement) { /* ... error handling ... */ return null; }
-
+    
     const counterText = laneTitleElement.innerText.trim();
     const counterNumber = parseInt(counterText.split(' ')[1]);
-    if (isNaN(counterNumber)) { /* ... error handling ... */ return null; }
-
+    
     const activeQueueTypeElement = document.querySelector('.tabs span.active');
     const queueType = activeQueueTypeElement ? activeQueueTypeElement.textContent.trim().toUpperCase() : '';
-
-    if (!queueType) { /* ... error handling ... */ return null; }
 
     return { queueElement, counterNumber, queueType };
 }
 
-// ... (callNext, togglePause, resetQueues functions remain the same) ...
 function callNext(queueId) {
     const info = getQueueInfo(queueId);
     if (info) {
@@ -72,18 +60,16 @@ function resetQueues() {
             if (activeQueueTypeElement) {
                 clearTickets(queueType);
             }
-            // Reset visible counter numbers to 0 immediately (WebSocket will confirm)
+            // to be removed 
             document.getElementById("queueNumber1").innerText = "0";
             document.getElementById("queueNumber2").innerText = "0";
             document.getElementById("queueNumber3").innerText = "0";
-            // Also reset the global ticket list display
             if (ticketsListElement) {
                 ticketsListElement.innerHTML = '<li>No tickets across all queues.</li>';
             }
         }
     });
 }
-
 
 /*
     ASYNC FUNCTIONS (REST API calls)
@@ -130,38 +116,43 @@ async function clearTickets(queueType) {
 /*
     WEBSOCKET (Main Logic)
 */
-const websocket = new WebSocket('ws://localhost:8080/ws-updates');
+document.addEventListener('DOMContentLoaded', () => {
+    const ticketsListElement = document.getElementById("ticketsList");
+    if (!ticketsListElement) {
+        console.error("Error: Element with ID 'ticketsList' not found in HTML. Please ensure it's added.");
+    } else {
+        ticketsListElement.innerHTML = '<li>Loading all active tickets...</li>';
+    }
 
-websocket.onopen = (event) => {
-    console.log("WebSocket connection opened:", event);
-};
+    const websocket = new WebSocket('ws://localhost:8080/ws-updates');
 
-websocket.onmessage = (event) => {
+    const activeQueueTypeElement = document.querySelector('.tabs span.active');
+    const currentPageServiceType = activeQueueTypeElement ? activeQueueTypeElement.textContent.trim().toUpperCase() : '';
+
+
+    websocket.onopen = (event) => {
+        console.log("WebSocket connection opened:", event);
+
+        websocket.send(JSON.stringify({type: "CURRENT_SERVICE", serviceType: currentPageServiceType}));
+    };
+
+    websocket.onmessage = (event) => {
     try {
         const data = JSON.parse(event.data);
         console.log("Received WebSocket message:", data);
-
-        const activeQueueTypeElement = document.querySelector('.tabs span.active');
-        const currentPageServiceType = activeQueueTypeElement ? activeQueueTypeElement.textContent.trim().toUpperCase() : '';
-
+        
         if (data.type === "COUNTER_UPDATE") {
-            // Only update counters if the message is for *this specific page's service*.
-            // (e.g., admissions.html only updates if data.serviceType is 'ADMISSION')
             if (data.serviceType === currentPageServiceType) {
                 document.getElementById(counterElementIds.counter1Serving).innerText = (data.counter1Serving !== undefined && data.counter1Serving !== null) ? data.counter1Serving : 0;
                 document.getElementById(counterElementIds.counter2Serving).innerText = (data.counter2Serving !== undefined && data.counter2Serving !== null) ? data.counter2Serving : 0;
                 document.getElementById(counterElementIds.counter3Serving).innerText = (data.counter3Serving !== undefined && data.counter3Serving !== null) ? data.counter3Serving : 0;
             }
-        } else if (data.type === "TICKET_UPDATE") {
-            // This section updates the SINGLE, GLOBAL ticket list
-            // It does NOT check data.serviceType because the list is persistent across all services
+        } 
+        if (data.type === "TICKET_UPDATE") {
             if (ticketsListElement) {
-                ticketsListElement.innerHTML = ''; // Clear previous list
-
+                ticketsListElement.innerHTML = ''; 
                 if (data.tickets && data.tickets.length > 0) {
-                    // Sort tickets (e.g., by service type, then by number) for readability
                     data.tickets.sort((a, b) => {
-                        // Prioritize PWD tickets, then sort by service, then by number
                         if (a.isPWD && !b.isPWD) return -1;
                         if (!a.isPWD && b.isPWD) return 1;
 
@@ -172,13 +163,7 @@ websocket.onmessage = (event) => {
                     });
 
                     data.tickets.forEach(ticket => {
-                        const li = document.createElement('li');
-                        // Display the service type for each ticket since it's a global list
-                        let ticketDisplay = `[${ticket.service || 'UNKNOWN'}] Ticket #${ticket.number}`;
-                        if (ticket.status) { ticketDisplay += ` (Status: ${ticket.status})`; }
-                        if (ticket.isPWD) { ticketDisplay += ` (PWD)`; }
-                        li.innerText = ticketDisplay;
-                        ticketsListElement.appendChild(li);
+                        const mountedComponent = component(TicketItemComponent).mount(element, { ticket : ticket});
                     });
                 } else {
                     const li = document.createElement('li');
@@ -186,27 +171,54 @@ websocket.onmessage = (event) => {
                     ticketsListElement.appendChild(li);
                 }
             }
-        } else {
-            console.warn("Received unknown message type:", data.type, data);
         }
-
     } catch (error) {
         console.error("Error parsing or processing WebSocket message:", error, event.data);
     }
-};
 
-websocket.onclose = (event) => {
+    websocket.onclose = (event) => {
     console.warn("WebSocket connection closed:", event.code, event.reason);
-    setTimeout(() => {
-        console.log("Attempting to reconnect WebSocket...");
-        new WebSocket('ws://localhost:8080/ws-updates');
-    }, 5000);
-};
+        setTimeout(() => {
+            console.log("Attempting to reconnect WebSocket...");
+            new WebSocket('ws://localhost:8080/ws-updates');
+        }, 5000);
+    };
 
-websocket.onerror = (error) => {
-    console.error("WebSocket error:", error);
-    showNotification("WebSocket connection error. Please check your network or server.", "error");
-};
+    websocket.onerror = (error) => {
+        console.error("WebSocket error:", error);
+        showNotification("WebSocket connection error. Please check your network or server.", "error");
+        };
+    }
+});
+
+/*
+    INITIALIZE TICKETCOMPONENT
+*/
+
+const TicketItemComponent = component(
+    `
+    <div class="ticket-tab { props.ticket.status ? props.ticket.status.toLowerCase() : 'unknown-status' } { props.ticket.pwd ? 'pwd' : '' }">
+    <div class="ticket-heading">TICKET</div>
+    <div class="ticket-details-grid">
+        <div class="label">NUMBER:</div>
+        <div class="value">#{ props.ticket.number }</div>
+
+        <div class="label">SERVICE TYPE:</div>
+        <div class="value">{ props.ticket.service || 'UNKNOWN' }</div>
+
+        <div class="label">TICKET ID:</div>
+        <div class="value">{ props.ticket.id }</div>
+
+        <div class="label">TICKET DATE:</div>
+        <div class="value">{ formatTicketDate(props.ticket.date) }</div>
+    </div>
+
+    </div>
+    `,
+    (el) => {
+
+    }
+);
 
 /*
     MISC FUNCTIONS

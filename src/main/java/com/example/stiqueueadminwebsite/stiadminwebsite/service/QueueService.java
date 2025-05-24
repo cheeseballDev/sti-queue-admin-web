@@ -1,4 +1,5 @@
 package com.example.stiqueueadminwebsite.stiadminwebsite.service;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -83,7 +84,7 @@ public class QueueService {
             Map<String, Object> update = firestore.runTransaction(transaction -> {
                 DocumentSnapshot snapshot = transaction.get(queueRef).get();
                 Boolean isOnBreak = snapshot.getBoolean("isOnBreak");
-                if (isOnBreak) {
+                if (isOnBreak != null && isOnBreak) {
                     transaction.update(queueRef, "isOnBreak", false, "counter", currentCounter);
                     Map<String, Object> result = new HashMap<>();
                     result.put("isOnBreak", isOnBreak);
@@ -107,11 +108,11 @@ public class QueueService {
         DocumentReference queueRef = firestore.collection("QUEUES").document(activeQueueType.toUpperCase());
 
         try {
-            ApiFuture<Void> transactionResult = firestore.runTransaction(transaction -> {
+            firestore.runTransaction(transaction -> {
                 DocumentSnapshot snapshot = transaction.get(queueRef).get();
-                Map<String, Object> updates = new HashMap<>();
-                for (int i = 1; i < 4; i++) 
-                    transaction.update(queueRef, "currentNumber", 0, "counter", i);
+                if (snapshot.exists())
+                    for (int i = 1; i < 4; i++) 
+                        transaction.update(queueRef, "currentNumber", 0, "counter", i);
                 return null;
             });
         
@@ -123,27 +124,24 @@ public class QueueService {
 
                 List<QueryDocumentSnapshot> documents = queryFuture.get().getDocuments();
 
-                if (documents.isEmpty()) {
+                if (documents.isEmpty())
                     return null;
-                }
 
                 WriteBatch batch = firestore.batch();
-                for (QueryDocumentSnapshot document : documents) {
+                for (QueryDocumentSnapshot document : documents)
                     batch.delete(document.getReference());
-                }
 
                 ApiFuture<List<WriteResult>> batchFuture = batch.commit();
                 batchFuture.get(10, TimeUnit.SECONDS);
-
-                if (documents.size() < 500) {
-                    break;
-                }
-            }
-                return ResponseEntity.ok("Successfully cleared queue " + activeQueueType + " and its tickets.");
                 
-            } catch (Exception e) {
+                if (documents.size() < 500) 
+                    break;
+            }
+            return ResponseEntity.ok("Successfully cleared queue " + activeQueueType + " and its tickets.");
+                
+        } catch (Exception e) {
             Thread.currentThread().interrupt();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error clearing tickets: " + e.getMessage());
-            }
+        }
     }
 }
