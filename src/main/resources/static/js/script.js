@@ -24,13 +24,16 @@ function getQueueInfo(queueId) {
     const activeQueueTypeElement = document.querySelector('.tabs span.active');
     const queueType = activeQueueTypeElement ? activeQueueTypeElement.textContent.trim().toUpperCase() : '';
 
-    return { queueElement, counterNumber, queueType };
+    const checkbox = document.getElementById('myCheckbox');
+    const isChecked = checkbox.checked;
+
+    return { queueElement, counterNumber, queueType, isChecked };
 }
 
 function callNext(queueId) {
     const info = getQueueInfo(queueId);
     if (info) {
-        incrementQueue(info.queueType, info.counterNumber, queueId);
+        incrementQueue(info.queueType, info.counterNumber, info.isChecked);
     }
 }
 
@@ -74,8 +77,8 @@ function resetQueues() {
 /*
     ASYNC FUNCTIONS (REST API calls)
 */
-async function incrementQueue(queueType, counterNumber, queueId) {
-    const apiUrl = `/api/${queueType.toUpperCase()}/next?queueType=${encodeURIComponent(queueType.toUpperCase())}&counterNumber=${encodeURIComponent(counterNumber)}`;
+async function incrementQueue(queueType, counterNumber, isChecked) {
+    const apiUrl = `/api/${queueType.toUpperCase()}/next?queueType=${encodeURIComponent(queueType.toUpperCase())}&counterNumber=${encodeURIComponent(counterNumber)}&isChecked=${encodeURI(isChecked)}`;
     try {
         const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
         if (response.status === 204) { showNotification("Queue is already at the current number.", "info"); return; }
