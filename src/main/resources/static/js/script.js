@@ -1,10 +1,93 @@
-const component = riot.component;
-
 const counterElementIds = {
     'counter1Serving': 'queueNumber1',
     'counter2Serving': 'queueNumber2',
     'counter3Serving': 'queueNumber3',
 };
+
+let ticketsList;
+let currentPageServiceType;
+
+/*
+    HELPER FUNCTIONS 
+*/
+
+function formatTicketDate(createdAt) {
+    if (createdAt && typeof createdAt === 'object' && createdAt.seconds !== undefined) {
+        const date = new Date(createdAt.seconds * 1000);
+        return date.toLocaleString();
+    }
+    if (createdAt) {
+        const date = new Date(createdAt);
+        if (!isNaN(date.getTime())) {
+            return date.toLocaleString();
+        }
+    }
+    return 'Unknown Date'; // Fallback for invalid or missing date
+}
+
+/*
+    TICKET FORMATTER
+*/
+
+// Template for a single ticket list item (now using the helper function)
+const ticketTemplate = (ticket) => `
+    <li class="ticket-item ${ticket.status ? ticket.status.toLowerCase() : ''} ${ticket.isPWD ? 'pwd' : ''}">
+        <strong>#${ticket.number}</strong> - ${ticket.service || 'UNKNOWN'} -
+        ${formatTicketDate(ticket.createdAt)}
+        <br>Ticket ID: ${ticket.id}
+        ${ticket.isPWD ? ' (PWD)' : ''}
+        ${ticket.status ? ` (Status: ${ticket.status})` : ''}
+    </li>
+`;
+
+// Main rendering function for the tickets list
+const renderTickets = (serviceType, tickets) => {
+    // Ensure the container is available. This check should already be done in DOMContentLoaded.
+    if (!ticketsList) {
+        console.error("renderTickets: ticketsList is null. Cannot render.");
+        return;
+    }
+
+    ticketsList.innerHTML = ''; // Clear the list once here
+
+    // Update the heading for the current service type
+    const parent = ticketsList.parentElement;
+    let heading = parent.querySelector('h3'); // Assuming h3 is "All Active Tickets"
+    if (!heading) {
+        heading = document.createElement('h3');
+        parent.insertBefore(heading, ticketsList);
+    }
+    // You might want to update the heading to reflect the *filtered* tickets
+    // or keep it generic as "All Active Tickets" if the backend sends all.
+    // Given your backend sends tickets for the specific serviceType, this heading is fine.
+    heading.textContent = `Active Tickets for ${serviceType.toUpperCase()}`;
+
+
+    if (!tickets || tickets.length === 0) {
+        const li = document.createElement('li');
+        li.innerText = 'No waiting/serving tickets for this service.';
+        ticketsList.appendChild(li);
+        return;
+    }
+
+    // Sort tickets (your existing sorting logic)
+    tickets.sort((a, b) => {
+        if (a.isPWD && !b.isPWD) return -1;
+        if (!a.isPWD && b.isPWD) return 1;
+        if (a.service && b.service && a.service !== b.service) {
+            return a.service.localeCompare(b.service);
+        }
+        return (a.number || 0) - (b.number || 0);
+    });
+
+    // Append each ticket using the template
+    tickets.forEach(ticket => {
+        const li = document.createElement('li'); // Create a new LI for each ticket
+        li.innerHTML = ticketTemplate(ticket); // Populate with the template HTML
+        ticketsList.appendChild(li); // Append to the UL
+    });
+};
+
 
 /*
     BUTTON FUNCTIONS (These functions interact with the specific counters on the current page)
@@ -23,10 +106,10 @@ function getQueueInfo(queueId) {
     const activeQueueTypeElement = document.querySelector('.tabs span.active');
     const queueType = activeQueueTypeElement ? activeQueueTypeElement.textContent.trim().toUpperCase() : '';
 
-    const checkbox = document.getElementById('myCheckbox');
+    const checkbox = contentDiv.querySelector('input[type="checkbox"]'); 
     const isChecked = checkbox.checked;
 
-    return { queueElement, counterNumber, queueType, isChecked };
+    return { queueElement, counterNumber, queueType: currentPageServiceType, isChecked };
 }
 
 function callNext(queueId) {
@@ -66,8 +149,8 @@ function resetQueues() {
             document.getElementById("queueNumber1").innerText = "0";
             document.getElementById("queueNumber2").innerText = "0";
             document.getElementById("queueNumber3").innerText = "0";
-            if (ticketsListElement) {
-                ticketsListElement.innerHTML = '<li>No tickets across all queues.</li>';
+            if (ticketsList) {
+                ticketsList.innerHTML = '<li>No tickets across all queues.</li>';
             }
         }
     });
@@ -118,19 +201,15 @@ async function clearTickets(queueType) {
 /*
     WEBSOCKET (Main Logic)
 */
-document.addEventListener('DOMContentLoaded', () => {
-    const ticketsListElement = document.getElementById("ticketsList");
-    if (!ticketsListElement) {
-        console.error("Error: Element with ID 'ticketsList' not found in HTML. Please ensure it's added.");
-    } else {
-        ticketsListElement.innerHTML = '<li>Loading all active tickets...</li>';
-    }
 
-    const websocket = new WebSocket('ws://localhost:8080/ws-updates');
+document.addEventListener('DOMContentLoaded', () => {
+    ticketsList = document.getElementById("ticketsList");
+    ticketsList.innerHTML = '<li>Loading all active tickets...</li>';
 
     const activeQueueTypeElement = document.querySelector('.tabs span.active');
-    const currentPageServiceType = activeQueueTypeElement ? activeQueueTypeElement.textContent.trim().toUpperCase() : '';
+    currentPageServiceType = activeQueueTypeElement ? activeQueueTypeElement.textContent.trim().toUpperCase() : '';
 
+    const websocket = new WebSocket('ws://localhost:8080/ws-updates');
 
     websocket.onopen = (event) => {
         console.log("WebSocket connection opened:", event);
@@ -151,8 +230,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } 
         if (data.type === "TICKET_UPDATE") {
-            if (ticketsListElement) {
-                ticketsListElement.innerHTML = ''; 
+            if (ticketsList) {
+                ticketsList.innerHTML = ''; 
                 if (data.tickets && data.tickets.length > 0) {
                     data.tickets.sort((a, b) => {
                         if (a.isPWD && !b.isPWD) return -1;
@@ -163,21 +242,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                         return (a.number || 0) - (b.number || 0);
                     });
-
-                    data.tickets.forEach(ticket => {
-                        const mountedComponent = component(TicketItemComponent).mount(element, { ticket : ticket});
-                    });
-                } else {
-                    const li = document.createElement('li');
-                    li.innerText = 'No waiting/serving tickets across all queues.';
-                    ticketsListElement.appendChild(li);
+                    renderTickets(data.serviceType, data.tickets);
+                    return;    
                 }
+                const li = document.createElement('li');
+                li.innerText = 'No waiting/serving tickets across all queues.';
+                ticketsList.appendChild(li);
             }
         }
-    } catch (error) {
-        console.error("Error parsing or processing WebSocket message:", error, event.data);
+        } catch (error) {
+            console.error("Error parsing or processing WebSocket message:", error, event.data);
+        }
     }
-
     websocket.onclose = (event) => {
     console.warn("WebSocket connection closed:", event.code, event.reason);
         setTimeout(() => {
@@ -190,37 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error("WebSocket error:", error);
         showNotification("WebSocket connection error. Please check your network or server.", "error");
         };
-    }
-});
-
-/*
-    INITIALIZE TICKETCOMPONENT
-*/
-
-const TicketItemComponent = component(
-    `
-    <div class="ticket-tab { props.ticket.status ? props.ticket.status.toLowerCase() : 'unknown-status' } { props.ticket.pwd ? 'pwd' : '' }">
-    <div class="ticket-heading">TICKET</div>
-    <div class="ticket-details-grid">
-        <div class="label">NUMBER:</div>
-        <div class="value">#{ props.ticket.number }</div>
-
-        <div class="label">SERVICE TYPE:</div>
-        <div class="value">{ props.ticket.service || 'UNKNOWN' }</div>
-
-        <div class="label">TICKET ID:</div>
-        <div class="value">{ props.ticket.id }</div>
-
-        <div class="label">TICKET DATE:</div>
-        <div class="value">{ formatTicketDate(props.ticket.date) }</div>
-    </div>
-
-    </div>
-    `,
-    (el) => {
-
-    }
-);
+    });
 
 /*
     MISC FUNCTIONS
@@ -240,13 +286,8 @@ function printForm() {
     printWindow.print();
 }
 
-// Ensure all functions are globally accessible via the window object
-// This is necessary because your HTML uses inline onclick attributes (e.g., onclick="callNext('queueNumber1')")
 window.callNext = callNext;
 window.togglePause = togglePause;
 window.resetQueues = resetQueues;
 window.printForm = printForm;
 window.showNotification = showNotification;
-// window.confirmReset is from your modal, ensure it's defined elsewhere if not here.
-// You removed the modal confirmation logic from resetQueues to use sweetalert,
-// so you might not need a separate confirmReset function anymore unless your modal is still active.

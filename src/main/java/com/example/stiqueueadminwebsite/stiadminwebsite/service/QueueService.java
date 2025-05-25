@@ -18,7 +18,6 @@ import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.CollectionReference;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
-import com.google.cloud.firestore.FieldValue;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.Query;
 import com.google.cloud.firestore.QueryDocumentSnapshot;
@@ -55,55 +54,59 @@ public class QueueService {
     public ResponseEntity<?> incrementDatabase(String queueType, int counterNumber, boolean prioritizePWD) {
         CollectionReference ticketsCollectionReference = firestore.collection("TICKETS");
         DocumentReference queueRef = firestore.collection("QUEUES").document(queueType.toUpperCase());
+        String lowerCaseQueueType = queueType.toLowerCase();
         try {
         Map<String, Object> updateQueue = firestore.runTransaction(transaction -> {
 
             // SERVING TO COMPLETE
             Query oldServingTicketQuery = ticketsCollectionReference
-                .whereEqualTo("service", queueType)
+                .whereEqualTo("service", lowerCaseQueueType)
                 .whereEqualTo("counter", counterNumber)
                 .whereEqualTo("status", "serving")
                 .limit(1);
-
             QuerySnapshot oldServingTicketsSnapshot = transaction.get(oldServingTicketQuery).get();
 
+            // Read 2 & 3: Find the next ticket to serve (PWD or Regular)
+            QueryDocumentSnapshot nextTicketDocument = null;
+            QuerySnapshot nextCandidatesSnapshot = null; // Temporary snapshot for the next candidates
+
+            if (prioritizePWD) {
+                Query pwdQuery = ticketsCollectionReference
+                    .whereEqualTo("service", lowerCaseQueueType)
+                    .whereEqualTo("status", "waiting")
+                    .whereEqualTo("isPWD", true)
+                    .orderBy("number")
+                    .limit(1);
+                nextCandidatesSnapshot = transaction.get(pwdQuery).get(); // Read PWD queue
+            }
+
+            // If no PWD ticket was found, or if not prioritizing PWD, get a regular ticket
+            if (nextCandidatesSnapshot == null || nextCandidatesSnapshot.isEmpty()) {
+                Query regularQuery = ticketsCollectionReference
+                    .whereEqualTo("service", lowerCaseQueueType)
+                    .whereEqualTo("status", "waiting")
+                    .orderBy("number")
+                    .limit(1);
+                nextCandidatesSnapshot = transaction.get(regularQuery).get();
+            }
+            
+            // Determine the next ticket to serve from the snapshot
+            if (nextCandidatesSnapshot != null && !nextCandidatesSnapshot.isEmpty()) {
+                nextTicketDocument = nextCandidatesSnapshot.getDocuments().get(0);
+            }
+
+
+            // --- PHASE 2: ALL WRITES (after all reads are completed) ---
+
+            Map<String, Object> result = new HashMap<>(); // Initialize result map
+
+            // Write 1: Update the old serving ticket (if found)
             if (!oldServingTicketsSnapshot.isEmpty()) {
                 DocumentReference oldServingTicketRef = oldServingTicketsSnapshot.getDocuments().get(0).getReference();
                 transaction.update(oldServingTicketRef, "status", "completed");
             }
 
-            QueryDocumentSnapshot nextTicketDocument = null;
-
-            if (prioritizePWD) {
-                Query pwdQuery = ticketsCollectionReference
-                    .whereEqualTo("service", queueType)
-                    .whereEqualTo("status", "waiting")
-                    .whereEqualTo("isPWD", true)
-                    .orderBy("number")
-                    .limit(1);
-                QuerySnapshot nextPwdTicketsSnapshot = transaction.get(pwdQuery).get();
-
-                if (!nextPwdTicketsSnapshot.isEmpty()) {
-                    nextTicketDocument = nextPwdTicketsSnapshot.getDocuments().get(0);
-                }
-            }
-
-            if (nextTicketDocument == null) {
-                Query regularQuery = ticketsCollectionReference
-                    .whereEqualTo("service", queueType)
-                    .whereEqualTo("status", "waiting")
-                    .orderBy("number")
-                    .limit(1);
-
-                QuerySnapshot nextTicketsSnapshot = transaction.get(regularQuery).get();
-
-                if (!nextTicketsSnapshot.isEmpty()) {
-                    nextTicketDocument = nextTicketsSnapshot.getDocuments().get(0);
-                }
-            }
-
-            Map<String, Object> result = new HashMap<>();
-
+            // Write 2: Update the new serving ticket (if found) and the queue status
             if (nextTicketDocument != null) {
                 DocumentReference nextTicketRef = nextTicketDocument.getReference();
                 Long nextTicketNumber = nextTicketDocument.getLong("number");
@@ -118,14 +121,18 @@ public class QueueService {
                 result.put("status", "success");
                 result.put("message", "Queue incremented successfully.");
                 result.put("nextQueueNumber", nextTicketNumber);
-                result.put("serviceType", queueType);
+                result.put("serviceType", lowerCaseQueueType);
                 result.put("counterNumber", counterNumber);
                 result.put("isPWDServed", nextTicketDocument.getBoolean("isPWD"));
-                return result;
+                
+            } else {
+                result.put("status", "no_tickets");
+                result.put("message", "No more waiting tickets for " + queueType + ".");
+                result.put("nextQueueNumber", 0L); 
+                result.put("serviceType", queueType);
+                result.put("counterNumber", counterNumber);
             }
-            result.put("serviceType", queueType);
-            result.put("counterNumber", counterNumber);
-
+            
             return result;
 
         }).get();
@@ -179,7 +186,7 @@ public class QueueService {
                 DocumentSnapshot snapshot = transaction.get(queueRef).get();
                 if (snapshot.exists())
                     for (int i = 1; i < 4; i++) 
-                        transaction.update(queueRef, "currentNumber", 0, "counter", i);
+                        transaction.update(queueRef, "currentNumber", 0, "counter", i, "currentServing", 0);
                 return null;
             });
         

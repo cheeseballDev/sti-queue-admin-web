@@ -7,6 +7,7 @@ import jakarta.annotation.PostConstruct;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.cloud.Timestamp;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.EventListener;
@@ -45,8 +46,8 @@ public class QueueUpdateService {
         }
     }
 
-    private void setupServiceCountersListener(String serviceType) {
-        String upperServiceType = serviceType.toUpperCase();
+    private void setupServiceCountersListener(String queueType) {
+        String upperServiceType = queueType.toUpperCase();
         DocumentReference serviceRef = firestore.collection("QUEUES").document(upperServiceType);
 
         serviceRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
@@ -80,7 +81,8 @@ public class QueueUpdateService {
                     } catch (Exception e) {
                         logger.error("Error serializing or sending COUNTER_UPDATE for {}: {}", upperServiceType, e.getMessage(), e);
                     }
-                }
+                    return;
+                } 
                 logger.warn("Document for service counters {} does not exist or is null.", upperServiceType);
                 try {
                     Map<String, Object> resetPayload = Map.of("type", "COUNTER_UPDATE", "serviceType", upperServiceType,
@@ -107,16 +109,23 @@ public class QueueUpdateService {
                 }
 
                 List<Map<String, Object>> ticketsData = new ArrayList<>();
-                if (snapshots != null && snapshots.isEmpty()) {
+                if (snapshots != null) {
                     for (DocumentSnapshot doc : snapshots.getDocuments()) {
                         Map<String, Object> ticket = doc.getData();
                         if (ticket != null) {
                             ticket.put("id", doc.getId());
+                            ticket.put("number", doc.getLong("number"));
                             ticket.put("service", doc.getString("service"));
-                            ticket.put("dateCreated", doc.getDate("createdAt"));
+                            Object createdAtObject = doc.get("createdAt");
+                            ticket.put("createdAt", (Timestamp) createdAtObject);
+                            ticket.put("isPWD", doc.getBoolean("isPWD"));
                             ticket.put("isForm", doc.getBoolean("isForm"));
                             ticketsData.add(ticket);
                         }
+                        ticket.put("isForm", doc.getBoolean("isForm") != null ? doc.getBoolean("isForm") : false);
+                        ticket.put("isPWD", doc.getBoolean("isPWD") != null ? doc.getBoolean("isPWD") : false); // Important for sorting
+                        ticket.put("status", doc.getString("status") != null ? doc.getString("status") : "unknown"); // Important for styling
+                        ticketsData.add(ticket);
                     }
                 }
                 Map<String, Object> payload = new HashMap<>();
@@ -125,7 +134,6 @@ public class QueueUpdateService {
                 payload.put("tickets", ticketsData);
                 try {
                     String jsonPayload = objectMapper.writeValueAsString(payload);
-                    // Use the targeted send method from SimpleWebSocketHandler!
                     webSocketHandler.sendMessageToServiceSessions(serviceType, jsonPayload);
                     logger.debug("Sent TICKET_UPDATE for {} tickets to relevant sessions. Count: {}", serviceType, ticketsData.size());
                 } catch (JsonProcessingException e) {
