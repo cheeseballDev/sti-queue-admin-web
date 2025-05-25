@@ -121,11 +121,12 @@ public class QueueUpdateService {
                             ticket.put("isPWD", doc.getBoolean("isPWD"));
                             ticket.put("isForm", doc.getBoolean("isForm"));
                             ticketsData.add(ticket);
+                        } else {
+                            ticket.put("isForm", doc.getBoolean("isForm") != null ? doc.getBoolean("isForm") : false);
+                            ticket.put("isPWD", doc.getBoolean("isPWD") != null ? doc.getBoolean("isPWD") : false); // Important for sorting
+                            ticket.put("status", doc.getString("status") != null ? doc.getString("status") : "unknown"); // Important for styling
+                            ticketsData.add(ticket);
                         }
-                        ticket.put("isForm", doc.getBoolean("isForm") != null ? doc.getBoolean("isForm") : false);
-                        ticket.put("isPWD", doc.getBoolean("isPWD") != null ? doc.getBoolean("isPWD") : false); // Important for sorting
-                        ticket.put("status", doc.getString("status") != null ? doc.getString("status") : "unknown"); // Important for styling
-                        ticketsData.add(ticket);
                     }
                 }
                 Map<String, Object> payload = new HashMap<>();

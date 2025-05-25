@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admission - Queue</title>
   <link rel="stylesheet" href="css/styles.css">
-
-  <script src="https://cdn.jsdelivr.net/npm/tinylist@1.0.0/dist/tinylist.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert@2.1.2/dist/sweetalert.min.js"></script>
   <script src="js/script.js" defer></script> 
 </head>
@@ -44,7 +42,7 @@
 
           <button onclick="togglePause(this, 'queueNumber1')">Pause/Resume ⏸</button>
 
-          <label>Cut-off Number: <input type="number" value="00"></label>
+          <label>Cut-off Number: <input type="number" id="cutOffNumberInput1" value="150"></label>
 
           <label><input type="checkbox" checked> Prioritize PWD</label>
         </div>
@@ -61,7 +59,7 @@
 
           <button onclick="togglePause(this, 'queueNumber2')">Pause/Resume ⏸</button>
 
-          <label>Cut-off Number: <input type="number" value="00"></label>
+          <label>Cut-off Number: <input type="number" id="cutOffNumberInput2" value="150"></label>
 
           <label><input type="checkbox" checked> Prioritize PWD</label>
         </div>
@@ -79,16 +77,12 @@
 
           <button onclick="togglePause(this, 'queueNumber3')">Pause/Resume ⏸</button>
 
-          <label>Cut-off Number: <input type="number" value="00"></label>
+          <label>Cut-off Number: <input type="number" id="cutOffNumberInput3" value="150"></label>
 
           <label><input type="checkbox" checked> Prioritize PWD</label>
         </div>
       </div><hr style="border-top: 2px solid #ccc; margin: 30px 0;">
 
-      <div class="print-section">
-        <h3>Need to print a form?</h3>
-        <button onclick="printForm()">🖨️ Print Form</button>
-      </div>
       <div class="reset-section">
         <button onclick="resetQueues()">🔁 Reset All Queues</button>
       </div>

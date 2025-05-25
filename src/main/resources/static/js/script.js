@@ -22,44 +22,50 @@ function formatTicketDate(createdAt) {
             return date.toLocaleString();
         }
     }
-    return 'Unknown Date'; // Fallback for invalid or missing date
 }
 
 /*
     TICKET FORMATTER
 */
 
-// Template for a single ticket list item (now using the helper function)
 const ticketTemplate = (ticket) => `
     <li class="ticket-item ${ticket.status ? ticket.status.toLowerCase() : ''} ${ticket.isPWD ? 'pwd' : ''}">
-        <strong>#${ticket.number}</strong> - ${ticket.service || 'UNKNOWN'} -
-        ${formatTicketDate(ticket.createdAt)}
-        <br>Ticket ID: ${ticket.id}
-        ${ticket.isPWD ? ' (PWD)' : ''}
-        ${ticket.status ? ` (Status: ${ticket.status})` : ''}
+        <div class="ticket-header">
+            <span class="ticket-title">TICKET ID: ${ticket.id}</span>
+        </div>
+        <div class="ticket-details-grid">
+            <div class="label">NUMBER:</div>
+            <div class="value">${ticket.number}</div>
+
+            <div class="label">SERVICE TYPE:</div>
+            <div class="value">${ticket.service.toUpperCase()}</div>
+
+            <div class="label">TICKET DATE:</div>
+            <div class="value">${formatTicketDate(ticket.createdAt)}</div>
+        </div>
+
+        ${ticket.isForm ? `
+            <div class="ticket-actions">
+                <button onclick="printFormForTicket('${ticket.id}')">PRINT FORM</button>
+            </div>
+        ` : ''}
     </li>
 `;
 
-// Main rendering function for the tickets list
 const renderTickets = (serviceType, tickets) => {
-    // Ensure the container is available. This check should already be done in DOMContentLoaded.
     if (!ticketsList) {
         console.error("renderTickets: ticketsList is null. Cannot render.");
         return;
     }
 
-    ticketsList.innerHTML = ''; // Clear the list once here
+    ticketsList.innerHTML = '';
 
-    // Update the heading for the current service type
     const parent = ticketsList.parentElement;
-    let heading = parent.querySelector('h3'); // Assuming h3 is "All Active Tickets"
+    let heading = parent.querySelector('h3');
     if (!heading) {
         heading = document.createElement('h3');
         parent.insertBefore(heading, ticketsList);
     }
-    // You might want to update the heading to reflect the *filtered* tickets
-    // or keep it generic as "All Active Tickets" if the backend sends all.
-    // Given your backend sends tickets for the specific serviceType, this heading is fine.
     heading.textContent = `Active Tickets for ${serviceType.toUpperCase()}`;
 
 
@@ -70,7 +76,6 @@ const renderTickets = (serviceType, tickets) => {
         return;
     }
 
-    // Sort tickets (your existing sorting logic)
     tickets.sort((a, b) => {
         if (a.isPWD && !b.isPWD) return -1;
         if (!a.isPWD && b.isPWD) return 1;
@@ -80,17 +85,15 @@ const renderTickets = (serviceType, tickets) => {
         return (a.number || 0) - (b.number || 0);
     });
 
-    // Append each ticket using the template
     tickets.forEach(ticket => {
-        const li = document.createElement('li'); // Create a new LI for each ticket
-        li.innerHTML = ticketTemplate(ticket); // Populate with the template HTML
-        ticketsList.appendChild(li); // Append to the UL
+        const li = document.createElement('li'); 
+        li.innerHTML = ticketTemplate(ticket);
+        ticketsList.appendChild(li); 
     });
 };
 
-
 /*
-    BUTTON FUNCTIONS (These functions interact with the specific counters on the current page)
+    BUTTON FUNCTIONS 
 */
 
 function getQueueInfo(queueId) {
@@ -145,10 +148,6 @@ function resetQueues() {
             if (activeQueueTypeElement) {
                 clearTickets(queueType);
             }
-            // to be removed 
-            document.getElementById("queueNumber1").innerText = "0";
-            document.getElementById("queueNumber2").innerText = "0";
-            document.getElementById("queueNumber3").innerText = "0";
             if (ticketsList) {
                 ticketsList.innerHTML = '<li>No tickets across all queues.</li>';
             }
@@ -159,6 +158,7 @@ function resetQueues() {
 /*
     ASYNC FUNCTIONS (REST API calls)
 */
+
 async function incrementQueue(queueType, counterNumber, isChecked) {
     const apiUrl = `/api/${queueType.toUpperCase()}/next?queueType=${encodeURIComponent(queueType.toUpperCase())}&counterNumber=${encodeURIComponent(counterNumber)}&isChecked=${encodeURI(isChecked)}`;
     try {
@@ -196,7 +196,6 @@ async function clearTickets(queueType) {
         console.error("Clear Tickets Error:", error);
     }
 }
-
 
 /*
     WEBSOCKET (Main Logic)
@@ -248,8 +247,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const li = document.createElement('li');
                 li.innerText = 'No waiting/serving tickets across all queues.';
                 ticketsList.appendChild(li);
+                }
             }
-        }
         } catch (error) {
             console.error("Error parsing or processing WebSocket message:", error, event.data);
         }
@@ -276,11 +275,14 @@ function showNotification(message, iconType) {
     swal({ title: "INFORMATION", text: message, icon: iconType });
 }
 
-function printForm() {
+function printFormForTicket(ticketId) {
+    console.log(`Attempting to print form for ticket ID: ${ticketId}`);
     let printWindow = window.open('', '', 'height=500,width=800');
-    printWindow.document.write('<html><head><title>Form</title></head><body>');
+    printWindow.document.write('<html><head><title>Form for Ticket ' + ticketId + '</title>');
+    printWindow.document.write('</head><body>');
     printWindow.document.write('<h1>STI Queue Form</h1>');
-    printWindow.document.write('<p>This is a sample form for queue printing.</p>');
+    printWindow.document.write('<p>This is a sample form content for ticket ID: <strong>' + ticketId + '</strong>.</p>');
+    printWindow.document.write('<p>You would fetch the actual form data from the server here and display it.</p>');
     printWindow.document.write('</body></html>');
     printWindow.document.close();
     printWindow.print();
@@ -289,5 +291,5 @@ function printForm() {
 window.callNext = callNext;
 window.togglePause = togglePause;
 window.resetQueues = resetQueues;
-window.printForm = printForm;
 window.showNotification = showNotification;
+window.printFormForTicket = printFormForTicket;
