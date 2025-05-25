@@ -1,5 +1,4 @@
-import { component } from 'riot';
-import swal from 'sweetalert';
+const component = riot.component;
 
 const counterElementIds = {
     'counter1Serving': 'queueNumber1',
