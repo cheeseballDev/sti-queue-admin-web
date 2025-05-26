@@ -6,25 +6,25 @@
   <title>Admission - Queue</title>
   <link rel="stylesheet" href="css/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/sweetalert@2.1.2/dist/sweetalert.min.js"></script>
-  <script src="js/script.js" defer></script> 
+  <script src="js/script.js" defer></script>
 </head>
 
 <body>
-  <div class="header">
-    <img src="sti-logo.png" alt="STI Logo">
-    <h1>STI Queue Management</h1>
+  <header class="header">
+  <div class="header-content">
+    <h1 class="header-title">STI Queue Management</h1>
   </div>
+</header>
 
   <div class="main-content">
-    <div class="sidebar">
-      <a href="#" class="active">Homepage</a>
-      <a href="#">Courses</a>
-      <a href="#">Queues</a>
-      <a href="#">Balance</a>
-      <a href="#">About</a>
-      <button class="back-button" onclick="window.location.href='login.html'">⬅</button>
-    </div>
-
+  <div class="sidebar">
+    <a href="#" class="active">Homepage</a>
+    <a href="#">Courses</a>
+    <a href="#">Queues</a>
+    <a href="#">Balance</a>
+    <a href="#">About</a>
+    <button class="back-button" onclick="window.location.href='login.html'">⬅</button>
+  </div>
     <div class="container">
       <div class="tabs">
         <span class="" onclick="window.location.href='cashier.html'">Cashier</span>
@@ -35,9 +35,10 @@
       <div class="content">
         <div class="queue-box">
           <div class="lane-title">Counter 1</div><br>
-          Queue Number: <span id="queueNumber1">0</span>
+            Queue Number: <span id="queueNumber1">0</span>
         </div>
         <div class="controls">
+
           <button onclick="callNext('queueNumber1')">Call Next ▶</button>
 
           <button onclick="togglePause(this, 'queueNumber1')">Pause/Resume ⏸</button>
@@ -52,9 +53,10 @@
       <div class="content">
         <div class="queue-box">
           <div class="lane-title">Counter 2</div><br>
-          Queue Number: <span id="queueNumber2">0</span>
+            Queue Number: <span id="queueNumber2">0</span>
         </div>
         <div class="controls">
+
           <button onclick="callNext('queueNumber2')">Call Next ▶</button>
 
           <button onclick="togglePause(this, 'queueNumber2')">Pause/Resume ⏸</button>
@@ -69,7 +71,7 @@
       <div class="content">
         <div class="queue-box">
           <div class="lane-title">Counter 3</div><br>
-          Queue Number: <span id="queueNumber3">0</span>
+            Queue Number: <span id="queueNumber3">0</span>
         </div>
         <div class="controls">
 

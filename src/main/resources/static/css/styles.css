@@ -1,31 +1,40 @@
-
 body {
   font-family: sans-serif;
+  font-family: 'Inter', sans-serif;
   margin: 0;
   display: flex;
   flex-direction: column;
   height: 100vh;
+  background: linear-gradient(to bottom, #ffffff, #e7f0fa);
 }
 
 .header {
-  background-color: #a2b9c9;
-  padding: 10px;
-  text-align: left;
-  border-bottom: 1px solid #ccc;
+  background: linear-gradient(90deg, #0074cc, #4aa3df);
+  color: #ffffff;
+  padding: 15px 25px;
   display: flex;
   align-items: center;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-bottom: none;
+  z-index: 1000;
+  position: sticky;
+  top: 0;
 }
 
 .header img {
-  height: 40px;
-  vertical-align: middle;
-  margin-right: 10px;
+  height: 45px;
+  margin-right: 15px;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
 }
 
 .header h1 {
-  color: #ffffff;
+  font-size: 1.8em;
+  font-weight: 700;
+  letter-spacing: 0.5px;
   margin: 0;
-  font-size: 1.3em;
+  color: #ffffff;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
 }
 
 .main-content {
@@ -35,42 +44,65 @@ body {
 
 .sidebar {
   width: 200px;
-  background-color: #f0f0f0;
+  background-color: #2E3B4E;
   padding: 20px;
   display: flex;
   flex-direction: column;
   position: relative;
+  height: 100vh;
 }
 
 .sidebar a {
   text-decoration: none;
-  color: #333;
-  padding: 10px;
-  margin-bottom: 5px;
+  color: #FFFFFF;
+  padding: 10px 15px;
+  margin-bottom: 8px;
   border-radius: 5px;
+  transition: background-color 0.2s;
 }
 
-.sidebar a:hover,
+.sidebar a:hover {
+  background-color: #E3EEF8;
+  color: #003E70;
+}
+
 .sidebar a.active {
-  background-color: #ddd;
+  background-color: #005DAA;
+  color: #FFFFFF;
+  font-weight: bold;
 }
 
 .sidebar .back-button {
   position: absolute;
-  bottom: 10px;
-  left: 10px;
-  background-color: #f0f0f0;
+  bottom: 20px;
+  left: 20px;
+  background-color: #005DAA;
+  color: #FFFFFF;
   border: none;
-  padding: 10px;
+  padding: 10px 15px;
   cursor: pointer;
   border-radius: 5px;
+  transition: background-color 0.2s;
 }
 
 .sidebar .back-button:hover {
-  background-color: #ddd;
+  background-color: #003E70;
 }
 
+.main-content {
+  display: flex;
+}
+
+.page-content {
+  background-color: #F5F5F5;
+  padding: 20px;
+  flex-grow: 1;
+}
+
+
 .container {
+  background: #ffffffee;
+  backdrop-filter: blur(5px);
   width: 900px;
   margin: 50px auto;
   padding: 20px;
@@ -86,12 +118,32 @@ body {
 }
 
 .tabs span {
-  cursor: pointer;
-  padding-bottom: 5px;
+  position: relative;
+  padding: 10px 20px;
+  color: #333;
+  transition: all 0.3s ease;
 }
 
 .tabs .active {
   text-decoration: underline;
+  color: #0066cc;
+}
+
+.tabs span::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 3px;
+  background-color: #0066cc;
+  transition: all 0.3s ease;
+  transform: translateX(-50%);
+}
+
+.tabs span:hover::after,
+.tabs span.active::after {
+  width: 100%;
 }
 
 .content {
@@ -102,13 +154,27 @@ body {
 }
 
 .queue-box {
-  background: #ddd;
+  background: #f0f8ff;
   padding: 40px;
   font-size: 32px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+  border: 1px solid #cce7ff;
   border-radius: 5px;
+  color: #003366;
   flex: 1;
   text-align: center;
   margin-right: 40px;
+}
+
+.queue-box span {
+  font-size: 1em;
+  background-color: #ffffff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  display: inline-block;
+  margin-top: 10px;
+  color: #004080;
+  font-weight: bold;
 }
 
 .controls {
@@ -116,6 +182,19 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 20px;
+}
+
+.controls button {
+  background: linear-gradient(145deg, #b3d9ff, #80bfff);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  color: #003366;
+  font-weight: bold;
+  transition: all 0.2s ease-in-out;
+}
+
+.controls button:hover {
+  background: linear-gradient(145deg, #99ccff, #66b3ff);
+  transform: translateY(-2px);
 }
 
 button {
@@ -138,9 +217,8 @@ input {
 }
 
 label {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  color: #333;
+  font-weight: 500;
 }
 
 .lane-title {
@@ -214,8 +292,10 @@ label {
 }
 
 .reset-section button {
+  background: linear-gradient(to right, #f44336, #e57373);
   padding: 10px 20px;
   font-size: 16px;
+  font-weight: bold;
   background-color: #f44336;
   color: white;
   border: none;
@@ -224,10 +304,10 @@ label {
 }
 
 .reset-section button:hover {
-  background-color: #d32f2f;
+  background: linear-gradient(to right, #d32f2f, #ef5350);
+  transform: scale(1.05);
 }
 
-/* Modal styles */
 .modal {
   display: none;
   position: fixed;

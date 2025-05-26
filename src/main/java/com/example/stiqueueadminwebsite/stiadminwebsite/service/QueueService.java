@@ -51,6 +51,31 @@ public class QueueService {
         return clearAllTickets(queueType);
     }
 
+    @PostMapping("{queueType}/cutoff")
+    public ResponseEntity<?> updateCutOffNumber(@RequestParam String queueType, @RequestParam int counterNumber, @RequestParam int newCutOffNumber) {
+        return updateCutOffDatabase(queueType, counterNumber, newCutOffNumber);
+    }
+
+    public ResponseEntity<?> updateCutOffDatabase(String queueType, int counterNumber, int newCutOffNumber) {
+        System.out.print(queueType + " " + String.valueOf(counterNumber) + " " + String.valueOf(newCutOffNumber));
+        try {
+            DocumentReference queueDocRef = firestore.collection("QUEUES").document(queueType.toUpperCase());
+
+            WriteBatch batch = firestore.batch();
+
+            batch.update(queueDocRef, "counter", counterNumber);
+            batch.update(queueDocRef, "cutOffNumber", newCutOffNumber); 
+
+            ApiFuture<List<WriteResult>> future = batch.commit();
+            future.get(); 
+
+            return ResponseEntity.ok().build();
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to update cut off number");
+        }
+    }
+
     public ResponseEntity<?> incrementDatabase(String queueType, int counterNumber, boolean prioritizePWD) {
         CollectionReference ticketsCollectionReference = firestore.collection("TICKETS");
         DocumentReference queueRef = firestore.collection("QUEUES").document(queueType.toUpperCase());
@@ -66,9 +91,9 @@ public class QueueService {
                 .limit(1);
             QuerySnapshot oldServingTicketsSnapshot = transaction.get(oldServingTicketQuery).get();
 
-            // Read 2 & 3: Find the next ticket to serve (PWD or Regular)
+            // PWD CHECK
             QueryDocumentSnapshot nextTicketDocument = null;
-            QuerySnapshot nextCandidatesSnapshot = null; // Temporary snapshot for the next candidates
+            QuerySnapshot nextCandidatesSnapshot = null;
 
             if (prioritizePWD) {
                 Query pwdQuery = ticketsCollectionReference
@@ -77,10 +102,10 @@ public class QueueService {
                     .whereEqualTo("isPWD", true)
                     .orderBy("number")
                     .limit(1);
-                nextCandidatesSnapshot = transaction.get(pwdQuery).get(); // Read PWD queue
+                nextCandidatesSnapshot = transaction.get(pwdQuery).get();
             }
 
-            // If no PWD ticket was found, or if not prioritizing PWD, get a regular ticket
+            // NOT PWD
             if (nextCandidatesSnapshot == null || nextCandidatesSnapshot.isEmpty()) {
                 Query regularQuery = ticketsCollectionReference
                     .whereEqualTo("service", lowerCaseQueueType)
@@ -90,23 +115,20 @@ public class QueueService {
                 nextCandidatesSnapshot = transaction.get(regularQuery).get();
             }
             
-            // Determine the next ticket to serve from the snapshot
+            // NEXT TICKET
             if (nextCandidatesSnapshot != null && !nextCandidatesSnapshot.isEmpty()) {
                 nextTicketDocument = nextCandidatesSnapshot.getDocuments().get(0);
             }
 
 
-            // --- PHASE 2: ALL WRITES (after all reads are completed) ---
+            Map<String, Object> result = new HashMap<>();
 
-            Map<String, Object> result = new HashMap<>(); // Initialize result map
-
-            // Write 1: Update the old serving ticket (if found)
+            // OLD TICKET
             if (!oldServingTicketsSnapshot.isEmpty()) {
                 DocumentReference oldServingTicketRef = oldServingTicketsSnapshot.getDocuments().get(0).getReference();
                 transaction.update(oldServingTicketRef, "status", "completed");
             }
 
-            // Write 2: Update the new serving ticket (if found) and the queue status
             if (nextTicketDocument != null) {
                 DocumentReference nextTicketRef = nextTicketDocument.getReference();
                 Long nextTicketNumber = nextTicketDocument.getLong("number");

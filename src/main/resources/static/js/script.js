@@ -197,6 +197,26 @@ async function clearTickets(queueType) {
     }
 }
 
+async function updateCutoffNumber(queueType, counterNumber, newCutOffNumber) {
+    const apiUrl = `/api/${queueType}/cutoff?queueType=${encodeURIComponent(queueType)}&counterNumber=${encodeURIComponent(counterNumber)}&newCutOffNumber=${encodeURIComponent(newCutOffNumber)}`;
+
+    try {
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ cutoffNumber: newCutOffNumber }),
+        });
+
+        if (response.ok) {
+            showNotification(`Cut-off number updated to ${newCutOffNumber}.`, "success");
+        }
+    } catch (error) {
+        showNotification(`A network error occurred while updating the cut-off: ${error.message}`, "error");
+    }
+}
+
 /*
     WEBSOCKET (Main Logic)
 */
@@ -204,6 +224,57 @@ async function clearTickets(queueType) {
 document.addEventListener('DOMContentLoaded', () => {
     ticketsList = document.getElementById("ticketsList");
     ticketsList.innerHTML = '<li>Loading all active tickets...</li>';
+
+    const cutOffNumberInput1 = document.getElementById('cutOffNumberInput1');
+
+        cutOffNumberInput1.addEventListener('change', async (event) =>{
+        const newCutOffNumber = event.target.value;
+
+        if (newCutOffNumber === "" || isNaN(newCutOffNumber) || parseInt(newCutOffNumber) < 0) {
+            showNotification("Please enter a valid positive number for the cut-off.", "warning");
+            return;
+        }
+            const contentDiv = event.target.closest('.content');
+            const laneTitleElement = contentDiv.querySelector('.lane-title');
+            const counterText = laneTitleElement.innerText.trim();
+            const counterNumber = parseInt(counterText.split(' ')[1]);
+            
+        await updateCutoffNumber(currentPageServiceType, counterNumber, newCutOffNumber);
+    });
+
+    const cutOffNumberInput2 = document.getElementById('cutOffNumberInput1');
+
+        cutOffNumberInput2.addEventListener('change', async (event) =>{
+        const newCutOffNumber = event.target.value;
+
+        if (newCutOffNumber === "" || isNaN(newCutOffNumber) || parseInt(newCutOffNumber) < 0) {
+            showNotification("Please enter a valid positive number for the cut-off.", "warning");
+            return;
+        }
+            const contentDiv = event.target.closest('.content');
+            const laneTitleElement = contentDiv.querySelector('.lane-title');
+            const counterText = laneTitleElement.innerText.trim();
+            const counterNumber = parseInt(counterText.split(' ')[1]);
+            
+        await updateCutoffNumber(currentPageServiceType, counterNumber, newCutOffNumber);
+    });
+
+    const cutOffNumberInput3 = document.getElementById('cutOffNumberInput1');
+
+        cutOffNumberInput3.addEventListener('change', async (event) =>{
+        const newCutOffNumber = event.target.value;
+
+        if (newCutOffNumber === "" || isNaN(newCutOffNumber) || parseInt(newCutOffNumber) < 0) {
+            showNotification("Please enter a valid positive number for the cut-off.", "warning");
+            return;
+        }
+            const contentDiv = event.target.closest('.content');
+            const laneTitleElement = contentDiv.querySelector('.lane-title');
+            const counterText = laneTitleElement.innerText.trim();
+            const counterNumber = parseInt(counterText.split(' ')[1]);
+            
+        await updateCutoffNumber(currentPageServiceType, counterNumber, newCutOffNumber);
+    });
 
     const activeQueueTypeElement = document.querySelector('.tabs span.active');
     currentPageServiceType = activeQueueTypeElement ? activeQueueTypeElement.textContent.trim().toUpperCase() : '';
